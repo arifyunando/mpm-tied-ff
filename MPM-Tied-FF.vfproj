@@ -28,14 +28,14 @@
 		</Configuration>
 	</Configurations>
 	<Files>
-		<Filter Name="Libraries"/>
+		<Filter Name="Libraries">
+		<File RelativePath=".\Libraries\geom.f90"/>
+		<File RelativePath=".\Libraries\gimp.f90"/>
+		<File RelativePath=".\Libraries\Logging.f90"/>
+		<File RelativePath=".\Libraries\main.f90"/>
+		<File RelativePath=".\Libraries\mpm.f90"/>
+		<File RelativePath=".\Libraries\sparse_lib.f90"/></Filter>
 		<Filter Name="Source">
-		<File RelativePath=".\Source\geom.f90"/>
-		<File RelativePath=".\Source\gimp.f90"/>
-		<File RelativePath=".\Source\main.f90"/>
-		<File RelativePath=".\Source\mpm.f90"/>
-		<File RelativePath=".\Source\sparse_lib.f90"/>
-		<File RelativePath=".\Source\tied_ff.f90"/>
 		<File RelativePath=".\Source\Tied_Free_Field_Basic-V.f90"/></Filter>
 	</Files>
 	<Globals/>
