@@ -1,6 +1,6 @@
 /Output
 /Input
 /Reference
-/Debug
+Debug/**
 *.exe
 *.mod
