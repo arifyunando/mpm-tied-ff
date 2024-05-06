@@ -1,6 +1,8 @@
 /Output
 /Input
 /Reference
-Debug/**
+/Debug
+/x64
 *.exe
 *.mod
+*.u2d

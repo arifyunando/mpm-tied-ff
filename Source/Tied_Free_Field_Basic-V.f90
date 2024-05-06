@@ -707,7 +707,7 @@ PROGRAM Tied_Free_Field_Basic
 
     step=0
     time_steps: DO tstep=1,2000
-        PRINT '("Steps :" (I5) "/(I4)")', tstep, 2000
+        PRINT '("Steps :" (I5) "/" (I4))', tstep, 2000
         sub_step: DO sstep =1,substep
             step=step+1 
             wff=1.0_iwp
@@ -1340,7 +1340,7 @@ PROGRAM Tied_Free_Field_Basic
 
                 DO bod=1,size(mbod)
                     mbod(bod)%kinup_d2x1    = (4.0_iwp*mbod(bod)%x1/dtim**2.0_iwp) - &
-                                              (4.0_iwp*mbod(bod)%d1x1/dtim) -   &
+                                              (4.0_iwp*mbod(bod)%d1x1/dtim) -        &
                                               mbod(bod)%d2x1
                     mbod(bod)%kinup_d1x1    = 2.0_iwp*mbod(bod)%x1/dtim-mbod(bod)%d1x1
                     mbod(bod)%kinup_d2x1(0) = zero
@@ -1378,8 +1378,11 @@ PROGRAM Tied_Free_Field_Basic
                         ps1 = sigm+(2.0/3.0)*dsbar*sin(lode_theta-(2.0*3.1415926/3.0))
                         ps2 = sigm+(2.0/3.0)*dsbar*sin(lode_theta)
                         ps3 = sigm+(2.0/3.0)*dsbar*sin(lode_theta+(2.0*3.1415926/3.0))
-                        mbod(bod)%Devstress(i)   = (1.0/sqrt(two))*sqrt((ps1-ps2)**2+(ps2-ps3)**2+(ps3-ps1)**2)
-                        mbod(bod)%mean_stress(i) = (mbod(bod)%m_stress_efe(1,i)+mbod(bod)%m_stress_efe(2,i)+mbod(bod)%m_stress_efe(4,i))/3.0_iwp
+                        mbod(bod)%Devstress(i)   = (1.0/sqrt(two))*sqrt((ps1-ps2)**2+&
+                                                   (ps2-ps3)**2+(ps3-ps1)**2)
+                        mbod(bod)%mean_stress(i) = (mbod(bod)%m_stress_efe(1,i) + &
+                                                   mbod(bod)%m_stress_efe(2,i) +  &
+                                                   mbod(bod)%m_stress_efe(4,i))/3.0_iwp
                         mbod(bod)%m_stress(1,i)  = mbod(bod)%m_stress_efe(1,i)
                         mbod(bod)%m_stress(2,i)  = mbod(bod)%m_stress_efe(2,i)
                         mbod(bod)%m_stress(3,i)  = mbod(bod)%m_stress_efe(3,i)
