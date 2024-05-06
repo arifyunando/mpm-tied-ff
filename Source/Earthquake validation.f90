@@ -165,7 +165,7 @@ ploop=0
 
 !PRINT*,'Printing results:'
 !READ(*,*) printval
-printval = 1
+printval = 1000
 
 Tini  = 0.0
 Tfin  = 0.0
@@ -752,7 +752,6 @@ stable=.true.
 
 step=0
 time_steps: DO w=1,10000000
-    
     step = step + 1 
 
     Body_Solution: DO bod=1,size(mbod)
@@ -1498,6 +1497,8 @@ time_steps: DO w=1,10000000
                     mbod(bod)%mpyield,mbod(bod)%mpcp,mbod(bod)%m_velocity,      &
                     mbod(bod)%m_acc,mbod(bod)%nmps,nlen                         &
                 )
+                    
+                PRINT '("Steps :" (I8) "/" (I8))', step, 10000000
             END IF
         END IF
     END DO
@@ -1522,7 +1523,7 @@ time_steps: DO w=1,10000000
                     converged=.true.
                     IF(converged) THEN
                         mbod(bod)%a_ele(i)=ielloc
-                        num=g_num(:,ielloc)
+                            num=g_num(:,ielloc)
                         coord=TRANSPOSE(g_coord(:,num))
                         sp_coord(:,1)=mbod(bod)%gm_coord(:,i)
                         lp_coord(1,:)=mbod(bod)%mpoints(i,:)

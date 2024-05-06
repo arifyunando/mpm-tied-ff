@@ -1,7 +1,7 @@
 /Output
 /Input
-/Reference
 /Debug
+/Release
 /x64
 *.exe
 *.mod

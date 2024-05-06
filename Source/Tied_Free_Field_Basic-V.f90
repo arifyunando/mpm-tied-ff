@@ -159,8 +159,8 @@ PROGRAM Tied_Free_Field_Basic
     argv='Results'
     OPEN(10,FILE='Input/Datafound.dat',status='old')
     OPEN(300,FILE='Input/Groundacc.dat',status='old')
-    OPEN(800,FILE='Output/mpcoord'//'.txt')
-    OPEN(11,FILE='Output/'//argv(1:nlen)//'.txt')
+    OPEN(800,FILE='Output/FEM/mpcoord'//'.txt')
+    OPEN(11,FILE='Output/FEM/'//argv(1:nlen)//'.txt')
 
     !--First the variables of the centre body (bod=1) is read
     READ(10,*)mbod(1)%name,mbod(1)%slopeopt,mbod(1)%w1,mbod(1)%h1,mbod(1)%s1,   &

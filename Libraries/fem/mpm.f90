@@ -32,11 +32,11 @@ SUBROUTINE point_viz2(input,realisation,argv,gm_coord,m_stress,m_eps_acum,evpt,a
     !open(ss,FILE=argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.inp')
     ss=15
     IF(bod==1)THEN
-    OPEN(ss,FILE="Output/Paraview2/"//argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.inp') ! Creates a file with title argv_cnumber1_cnumber
+    OPEN(ss,FILE="Output/FEM/Paraview2/"//argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.inp') ! Creates a file with title argv_cnumber1_cnumber
     ELSE IF(bod==2)THEN
-    OPEN(ss,FILE="Output/Paraview_2DP_1/"//argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.inp') ! Creates a file with title argv_cnumber1_cnumber   
+    OPEN(ss,FILE="Output/FEM/Paraview_2DP_1/"//argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.inp') ! Creates a file with title argv_cnumber1_cnumber   
     ELSE
-    OPEN(ss,FILE="Output/Paraview_2DP_2/"//argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.inp') ! Creates a file with title argv_cnumber1_cnumber   
+    OPEN(ss,FILE="Output/FEM/Paraview_2DP_2/"//argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.inp') ! Creates a file with title argv_cnumber1_cnumber   
     END IF
 
     write(ss,*) '#'
@@ -158,11 +158,11 @@ SUBROUTINE paraview2(input,realisation,argv,nff,nelsy,g_coord,g_num,nf,nels,nod,
     ss=15
     !open(ss,FILE = argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.vtk')
     IF(bod==1)THEN
-    OPEN(ss,FILE="Output/Paraview2_2/"//argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.vtk')
+    OPEN(ss,FILE="Output/FEM/Paraview2_2/"//argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.vtk')
     ELSE IF(bod==2)THEN
-    OPEN(ss,FILE="Output/Paraview_2DM_1/"//argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.vtk')
+    OPEN(ss,FILE="Output/FEM/Paraview_2DM_1/"//argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.vtk')
     ELSE
-    OPEN(ss,FILE="Output/Paraview_2DM_2/"//argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.vtk')
+    OPEN(ss,FILE="Output/FEM/Paraview_2DM_2/"//argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.vtk')
     END IF
 
     WRITE(ss,'(a)')'# vtk DataFile Version 3.0'

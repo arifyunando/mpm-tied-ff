@@ -1019,7 +1019,7 @@ SUBROUTINE paraview2(input,realisation,argv,g_coord,g_num,nf,nels,nod,nn,nlen,  
     write(cnumber1,'(i8.6)') realisation
     ss=15
     !open(ss,FILE = argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.vtk')
-    OPEN(ss,FILE="Paraview2_2/"//argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.vtk')
+    OPEN(ss,FILE="Output/MPM/Paraview2_2/"//argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.vtk')
     WRITE(ss,'(a)')'# vtk DataFile Version 3.0'
     WRITE(ss,'(a)')"vtk output"
     WRITE(ss,'(a)')"ASCII"
