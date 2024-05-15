@@ -1,0 +1,228 @@
+%!PS-Adobe-1.0
+%%DocumentFonts: none
+%%Pages: 1
+%%EndComments
+/m {moveto} def
+/l {lineto} def
+/s {stroke} def
+/c {closepath} def
+/edef {exch def} bind def
+/arrow {/@to_y edef /@to_x edef /@from_y edef /@from_x edef
+/@dx @to_x @from_x sub def /@dy @to_y @from_y sub def
+/@length @dx @dx mul @dy @dy mul add sqrt def
+/@angle @dy @dx atan def
+gsave @from_x @from_y translate @angle rotate
+0 0 moveto @length 0 lineto currentpoint stroke newpath moveto
+-4 -2 rlineto @length 0 moveto
+-4  2 rlineto stroke grestore
+} def
+/*sf {
+exch findfont exch
+dup type /arraytype eq {makefont}{scalefont} ifelse setfont
+} bind def
+/languagelevel where
+{pop languagelevel} {1} ifelse
+2 lt { % ifelse
+/sf /*sf load def
+} { % else
+/sf /selectfont load def
+} ifelse
+%%EndProlog
+%%Page: 0 1
+gsave
+   108.00   311.59 translate
+     0.50 setlinewidth
+     0.00   165.00      0.00   145.20 arrow
+s
+     0.00   144.38      0.00   126.50 arrow
+s
+     0.00   123.75      0.00   108.25 arrow
+s
+     0.00   103.12      0.00    90.89 arrow
+s
+     0.00    82.50      0.00    74.53 arrow
+s
+     0.00    61.88      0.00    57.67 arrow
+s
+    16.50   165.00     17.02   145.54 arrow
+s
+    16.50   123.75     18.27   108.75 arrow
+s
+    16.50    82.50     19.12    75.34 arrow
+s
+    16.50    41.25     17.46    39.46 arrow
+s
+    33.00   165.00     33.97   145.95 arrow
+s
+    33.00   144.38     35.27   127.70 arrow
+s
+    33.00   123.75     37.47   111.20 arrow
+s
+    33.00   103.12     38.10    94.84 arrow
+s
+    33.00    82.50     37.32    77.29 arrow
+s
+    33.00    61.88     36.14    58.51 arrow
+s
+    33.00    41.25     34.86    39.49 arrow
+s
+    49.50   165.00     50.41   147.62 arrow
+s
+    49.50   123.75     55.77   116.78 arrow
+s
+    49.50    82.50     54.28    78.83 arrow
+s
+    49.50    41.25     51.77    39.60 arrow
+s
+    66.00   165.00     66.97   160.43 arrow
+s
+    66.00   144.38     75.96   141.00 arrow
+s
+    66.00   123.75     72.18   120.59 arrow
+s
+    66.00   103.12     73.32   100.30 arrow
+s
+    66.00    82.50     70.62    80.03 arrow
+s
+    66.00    61.88     70.13    59.96 arrow
+s
+    66.00    41.25     68.48    40.05 arrow
+s
+    82.50   165.00     85.88   167.55 arrow
+s
+    82.50   123.75     88.98   123.14 arrow
+s
+    82.50    82.50     87.24    81.36 arrow
+s
+    82.50    41.25     85.13    40.41 arrow
+s
+    99.00   165.00    104.39   168.82 arrow
+s
+    99.00   144.38    104.47   147.93 arrow
+s
+    99.00   123.75    105.07   125.68 arrow
+s
+    99.00   103.12    104.54   103.69 arrow
+s
+    99.00    82.50    103.58    82.15 arrow
+s
+    99.00    61.88    102.53    61.39 arrow
+s
+    99.00    41.25    101.59    40.78 arrow
+s
+   115.50   165.00    120.90   168.56 arrow
+s
+   115.50   123.75    120.10   126.29 arrow
+s
+   115.50    82.50    119.35    82.87 arrow
+s
+   115.50    41.25    117.83    41.02 arrow
+s
+   132.00   165.00    137.10   168.22 arrow
+s
+   132.00   144.38    136.33   147.07 arrow
+s
+   132.00   123.75    135.72   125.92 arrow
+s
+   132.00   103.12    135.37   104.62 arrow
+s
+   132.00    82.50    135.08    83.34 arrow
+s
+   132.00    61.88    134.62    62.19 arrow
+s
+   156.75   165.00    160.97   167.29 arrow
+s
+   156.75   123.75    159.71   125.20 arrow
+s
+   156.75    82.50    159.01    83.37 arrow
+s
+   181.50   165.00    184.84   166.56 arrow
+s
+   181.50   144.38    184.37   145.53 arrow
+s
+   181.50   123.75    183.98   124.69 arrow
+s
+   181.50   103.12    183.67   103.91 arrow
+s
+   206.25   165.00    208.87   166.04 arrow
+s
+   206.25   123.75    208.36   124.39 arrow
+s
+   231.00   165.00    233.12   165.73 arrow
+s
+   231.00   144.38    232.96   144.97 arrow
+s
+     0.00   123.75 m
+     0.00   165.00 l
+ s
+     0.00   165.00 m
+    33.00   165.00 l
+ s
+     0.00    82.50 m
+     0.00   123.75 l
+ s
+     0.00    41.25 m
+     0.00    82.50 l
+ s
+     0.00     0.00 m
+     0.00    41.25 l
+ s
+    33.00     0.00 m
+     0.00     0.00 l
+ s
+    33.00   165.00 m
+    66.00   165.00 l
+ s
+    66.00     0.00 m
+    33.00     0.00 l
+ s
+    66.00   165.00 m
+    99.00   165.00 l
+ s
+    99.00     0.00 m
+    66.00     0.00 l
+ s
+    99.00   165.00 m
+   132.00   165.00 l
+ s
+   132.00     0.00 m
+    99.00     0.00 l
+ s
+   132.00   165.00 m
+   181.50   165.00 l
+ s
+   181.50     0.00 m
+   132.00     0.00 l
+ s
+   181.50   165.00 m
+   231.00   165.00 l
+ s
+   231.00     0.00 m
+   181.50     0.00 l
+ s
+   231.00   165.00 m
+   297.00   165.00 l
+ s
+   297.00     0.00 m
+   231.00     0.00 l
+ s
+   297.00   165.00 m
+   396.00   165.00 l
+ s
+   396.00   165.00 m
+   396.00   123.75 l
+ s
+   396.00   123.75 m
+   396.00    82.50 l
+ s
+   396.00    82.50 m
+   396.00    41.25 l
+ s
+   396.00    41.25 m
+   396.00     0.00 l
+ s
+   396.00     0.00 m
+   297.00     0.00 l
+ s
+grestore
+showpage
