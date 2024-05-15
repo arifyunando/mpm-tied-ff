@@ -1,0 +1,60 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "p61 Debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/Reference/Programming-FEM-Griffiths/chap06/binary/p61/debug",
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/Reference/Programming-FEM-Griffiths/chap06/binary/p61",
+            "externalConsole": false,
+            "MIMode": "gdb",
+        },
+        {
+            "name": "p41 Debug Intel",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/Reference/Programming-FEM-Griffiths/intel_binary/p41/p41",
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/Reference/Programming-FEM-Griffiths/intel_binary/p41/",
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "preLaunchTask": "compile_p41"
+        },
+        {
+            "name": "p51 Debug Intel",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/Reference/Programming-FEM-Griffiths/intel_binary/p51/p51",
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/Reference/Programming-FEM-Griffiths/intel_binary/p51/",
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "preLaunchTask": "compile_p51"
+        },
+        {
+            "name": "p61 Debug Intel",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/Reference/Programming-FEM-Griffiths/intel_binary/p61/p61",
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/Reference/Programming-FEM-Griffiths/intel_binary/p61/",
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "preLaunchTask": "compile_p61"
+        },
+        {
+            "name": "p65 Debug Intel",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/Reference/Programming-FEM-Griffiths/intel_binary/p65/p65",
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/Reference/Programming-FEM-Griffiths/intel_binary/p65/",
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "preLaunchTask": "compile_p65"
+        }
+    ]
+}
+
