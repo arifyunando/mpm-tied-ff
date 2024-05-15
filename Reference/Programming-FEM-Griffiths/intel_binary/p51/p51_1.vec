@@ -1,0 +1,76 @@
+%!PS-Adobe-1.0
+%%DocumentFonts: none
+%%Pages: 1
+%%EndComments
+/m {moveto} def
+/l {lineto} def
+/s {stroke} def
+/c {closepath} def
+/edef {exch def} bind def
+/arrow {/@to_y edef /@to_x edef /@from_y edef /@from_x edef
+/@dx @to_x @from_x sub def /@dy @to_y @from_y sub def
+/@length @dx @dx mul @dy @dy mul add sqrt def
+/@angle @dy @dx atan def
+gsave @from_x @from_y translate @angle rotate
+0 0 moveto @length 0 lineto currentpoint stroke newpath moveto
+-4 -2 rlineto @length 0 moveto
+-4  2 rlineto stroke grestore
+} def
+/*sf {
+exch findfont exch
+dup type /arraytype eq {makefont}{scalefont} ifelse setfont
+} bind def
+/languagelevel where
+{pop languagelevel} {1} ifelse
+2 lt { % ifelse
+/sf /*sf load def
+} { % else
+/sf /selectfont load def
+} ifelse
+%%EndProlog
+%%Page: 0 1
+gsave
+   108.00   202.15 translate
+     0.50 setlinewidth
+     0.00   387.69      0.00   368.31 arrow
+s
+   193.85   387.69    198.00   368.31 arrow
+s
+   387.69   387.69    396.00   368.31 arrow
+s
+     0.00   193.85      0.00   184.15 arrow
+s
+   193.85   193.85    198.00   184.15 arrow
+s
+   387.69   193.85    396.00   184.15 arrow
+s
+   193.85     0.00    198.00     0.00 arrow
+s
+   387.69     0.00    396.00     0.00 arrow
+s
+     0.00   387.69 m
+   193.85   387.69 l
+ s
+     0.00   193.85 m
+     0.00   387.69 l
+ s
+   193.85   387.69 m
+   387.69   387.69 l
+ s
+   387.69   387.69 m
+   387.69   193.85 l
+ s
+     0.00     0.00 m
+     0.00   193.85 l
+ s
+   193.85     0.00 m
+     0.00     0.00 l
+ s
+   387.69     0.00 m
+   193.85     0.00 l
+ s
+   387.69   193.85 m
+   387.69     0.00 l
+ s
+grestore
+showpage

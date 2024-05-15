@@ -1095,6 +1095,9 @@ PROGRAM Tied_Free_Field_Basic
                     dparm                                                       &
                 )
 
+                ! pardiso (pt, maxfct, mnum, mtype, phase, n, a, ia, ja, perm, nrhs, iparm, msglvl, b, x, error)
+                ! A*X = B
+
                 phase = 22  !// LU decompose
                 CALL pardiso(                                                   &
                     mbod(bod)%pt,                                               &
@@ -1307,6 +1310,10 @@ PROGRAM Tied_Free_Field_Basic
 
                     mbod(bod)%iparm(8)  = 10 ! max numbers of iterative refinement steps
                     
+                    ! pardiso (pt, maxfct, mnum, mtype, phase, n, a, ia, ja, perm, nrhs, iparm, msglvl, b, x, error)
+                    ! A*X = B
+                    ! X = mbod(bod)%loads(1:mbod(bod)%neq)
+                    ! B = mbod(bod)%residual(1:mbod(bod)%neq)
                     phase = 33  ! solve equations
                     call pardiso(                                               &
                         mbod(bod)%pt,                                           &

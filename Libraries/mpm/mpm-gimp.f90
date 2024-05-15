@@ -435,7 +435,7 @@ SUBROUTINE iGIMP_funder3(s,mpoints,lp_mp,nip,coord,cellsize,gm_coord,gimptol,GIM
     ! Subroutine to compute implicit GIMP shape functions and shape functions derivatives. 
     ! iGIMP_funder3 uses a constant gradient at the center of the nodes and it reduces as the
     ! support domain ends
-
+    !
     IMPLICIT NONE
     INTEGER,PARAMETER::iwp=SELECTED_REAL_KIND(15)
     INTEGER,INTENT(IN)::s,nip,GIMP_nodes(:,:),a_ele(:),iel,c_ele(:)
@@ -461,159 +461,142 @@ SUBROUTINE iGIMP_funder3(s,mpoints,lp_mp,nip,coord,cellsize,gm_coord,gimptol,GIM
     lpy=lp_mp(2,s)*(two/cellsize)
 
     Fun_Deriv:DO n=1,nodes
-    Sr=0.0
-    Sz=0.0
-    dSr=0.0
-    dSz=0.0
-    nod=GIMP_nodes(n,1)
-    coordx=g_coord(1,nod)
-    coordy=g_coord(2,nod)
+        Sr=0.0
+        Sz=0.0
+        dSr=0.0
+        dSz=0.0
+        nod=GIMP_nodes(n,1)
+        coordx=g_coord(1,nod)
+        coordy=g_coord(2,nod)
 
-    !--Evaluate the local coordinate of the material point inside and outside the element affected
-    IF(a_ele(s)==iel)THEN !--Material point inside the element
-    factx=mpoints(s,1)
-    ELSE     !--Material pooint outside the element
-    IF(xpoint<=coordx)THEN !--point outside the element in the x direction (left side)
-    IF(n==1.or.n==2)xdist=coordx-xpoint
-    IF(n==3.or.n==4)xdist=(coordx-cellsize)-xpoint
-    factx=((cellsize/two+xdist)/(cellsize/two))*(-one)   !--local coordinate point at the left side of the element
-    ELSE IF(xpoint>=coordx)THEN  !--point outside the element in the x direction (right side)
-    IF(n==1.or.n==2)xdist=xpoint-(coordx+cellsize)
-    IF(n==3.or.n==4)xdist=xpoint-(coordx)
-    factx=((cellsize/two+xdist)/(cellsize/two))          !--local coordinate point at the right side of the element
-    END IF
-    END IF
+        !--Evaluate the local coordinate of the material point inside and outside the element affected
+        IF(a_ele(s)==iel)THEN !--Material point inside the element
+            factx=mpoints(s,1)
+        ELSE     !--Material pooint outside the element
+            IF(xpoint<=coordx)THEN          !--point outside the element in the x direction (left side)
+                IF(n==1.or.n==2) xdist=coordx-xpoint
+                IF(n==3.or.n==4) xdist=(coordx-cellsize)-xpoint
+                factx = ((cellsize/two+xdist)/(cellsize/two))*(-one)   !--local coordinate point at the left side of the element
+            ELSE IF(xpoint>=coordx)THEN     !--point outside the element in the x direction (right side)
+                IF(n==1.or.n==2) xdist=xpoint-(coordx+cellsize)
+                IF(n==3.or.n==4) xdist=xpoint-(coordx)
+                factx = ((cellsize/two+xdist)/(cellsize/two))       !--local coordinate point at the right side of the element
+            END IF
+        END IF
 
-    IF(a_ele(s)==iel)THEN
-    facty=mpoints(s,2)
-    ELSE 
-    IF(ypoint>=coordy)THEN !--point outside the element in the y direction (above the element)
-    IF(n==1.or.n==4)ydist=((coordy+cellsize)-ypoint)*(-one)
-    IF(n==2.or.n==3)ydist=((coordy)-ypoint)*(-one)
-    facty=((cellsize/two+ydist)/(cellsize/two))          !--local coordinate point over the element
-    ELSE IF(ypoint<=coordy)THEN  !--point outside the element in the y direction (below the element)
-    IF(n==2.or.n==3)ydist=(ypoint-(coordy-cellsize))*(-one)
-    IF(n==1.or.n==4)ydist=(ypoint-(coordy))*(-one)
-    facty=((cellsize/two+ydist)/(cellsize/two))*(-one)   !--local coordinate point below the element
-    END IF  
-    END IF
-    !--End of the evaluation of the local coordinate of the material point
+        IF(a_ele(s)==iel)THEN
+            facty=mpoints(s,2)
+        ELSE 
+            IF(ypoint>=coordy)THEN          !--point outside the element in the y direction (above the element)
+                IF(n==1.or.n==4)ydist=((coordy+cellsize)-ypoint)*(-one)
+                IF(n==2.or.n==3)ydist=((coordy)-ypoint)*(-one)
+                facty=((cellsize/two+ydist)/(cellsize/two))          !--local coordinate point over the element
+            ELSE IF(ypoint<=coordy)THEN     !--point outside the element in the y direction (below the element)
+                IF(n==2.or.n==3)ydist=(ypoint-(coordy-cellsize))*(-one)
+                IF(n==1.or.n==4)ydist=(ypoint-(coordy))*(-one)
+                facty=((cellsize/two+ydist)/(cellsize/two))*(-one)   !--local coordinate point below the element
+            END IF  
+        END IF
+        !--End of the evaluation of the local coordinate of the material point
 
-    !Shape functions
-    IF(n==1)THEN  !Comparing with node 1
-    IF(factx<=-0.50_iwp)THEN
-    Sr=0.5_iwp*(factx+lpx)*(1.0_iwp-0.5_iwp*(factx+lpx))+0.75_iwp
-    ELSE IF(factx>=-0.50_iwp.and.factx<=0.5_iwp)THEN    
-    Sr=0.5_iwp*(factx+lpx)-0.25_iwp*(factx+lpx)**2-0.5_iwp*(factx-lpx)+0.25_iwp*(factx-lpx)**2
-    ELSE
-    Sr=0.25_iwp-0.5_iwp*(factx-lpx)+0.25_iwp*(factx-lpx)**2
-    END IF   
+        !Shape functions
+        IF(n==1)THEN        !Comparing with node 1
+            IF(factx<=-0.50_iwp)THEN
+                Sr=0.5_iwp*(factx+lpx)*(1.0_iwp-0.5_iwp*(factx+lpx))+0.75_iwp
+            ELSE IF(factx>=-0.50_iwp.and.factx<=0.5_iwp)THEN    
+                Sr=0.5_iwp*(factx+lpx)-0.25_iwp*(factx+lpx)**2-0.5_iwp*(factx-lpx)+0.25_iwp*(factx-lpx)**2
+            ELSE
+                Sr=0.25_iwp-0.5_iwp*(factx-lpx)+0.25_iwp*(factx-lpx)**2
+            END IF   
 
-    IF(facty<=-0.50_iwp)THEN
-    Sz=0.5_iwp*(facty+lpy)*(1.0_iwp-0.5_iwp*(facty+lpy))+0.75_iwp
-    ELSE IF(facty>=-0.50_iwp.and.facty<=0.5_iwp)THEN    
-    Sz=0.5_iwp*(facty+lpy)-0.25_iwp*(facty+lpy)**2-0.5_iwp*(facty-lpy)+0.25_iwp*(facty-lpy)**2
-    ELSE
-    Sz=0.25_iwp-0.5_iwp*(facty-lpy)+0.25_iwp*(facty-lpy)**2
-    END IF 
+            IF(facty<=-0.50_iwp)THEN
+                Sz=0.5_iwp*(facty+lpy)*(1.0_iwp-0.5_iwp*(facty+lpy))+0.75_iwp
+            ELSE IF(facty>=-0.50_iwp.and.facty<=0.5_iwp)THEN    
+                Sz=0.5_iwp*(facty+lpy)-0.25_iwp*(facty+lpy)**2-0.5_iwp*(facty-lpy)+0.25_iwp*(facty-lpy)**2
+            ELSE
+                Sz=0.25_iwp-0.5_iwp*(facty-lpy)+0.25_iwp*(facty-lpy)**2
+            END IF 
 
-    ELSE IF(n==2)THEN    !Comparing with node 2
-    IF(factx<=-0.50_iwp)THEN
-    Sr=0.5_iwp*(factx+lpx)*(1.0_iwp-0.5_iwp*(factx+lpx))+0.75_iwp
-    ELSE IF(factx>=-0.50_iwp.and.factx<=0.5_iwp)THEN    
-    Sr=0.5_iwp*(factx+lpx)-0.25_iwp*(factx+lpx)**2-0.5_iwp*(factx-lpx)+0.25_iwp*(factx-lpx)**2
-    ELSE
-    Sr=0.25_iwp-0.5_iwp*(factx-lpx)+0.25_iwp*(factx-lpx)**2
-    END IF 
+        ELSE IF(n==2)THEN   !Comparing with node 2
+            IF(factx<=-0.50_iwp)THEN
+                Sr=0.5_iwp*(factx+lpx)*(1.0_iwp-0.5_iwp*(factx+lpx))+0.75_iwp
+            ELSE IF(factx>=-0.50_iwp.and.factx<=0.5_iwp)THEN    
+                Sr=0.5_iwp*(factx+lpx)-0.25_iwp*(factx+lpx)**2-0.5_iwp*(factx-lpx)+0.25_iwp*(factx-lpx)**2
+            ELSE
+                Sr=0.25_iwp-0.5_iwp*(factx-lpx)+0.25_iwp*(factx-lpx)**2
+            END IF 
 
-    IF(facty<=-0.50_iwp)THEN
-    Sz=0.5_iwp*(facty+lpy)*(1.0_iwp+0.5_iwp*(facty+lpy))+0.25_iwp
-    ELSE IF(facty>=-0.50_iwp.and.facty<=0.5_iwp)THEN    
-    Sz=0.5_iwp*(facty+lpy)+0.25_iwp*(facty+lpy)**2-0.5_iwp*(facty-lpy)-0.25_iwp*(facty-lpy)**2
-    ELSE
-    Sz=0.75_iwp-0.5_iwp*(facty-lpy)-0.25_iwp*(facty-lpy)**2
-    END IF       
+            IF(facty<=-0.50_iwp)THEN
+                Sz=0.5_iwp*(facty+lpy)*(1.0_iwp+0.5_iwp*(facty+lpy))+0.25_iwp
+            ELSE IF(facty>=-0.50_iwp.and.facty<=0.5_iwp)THEN    
+                Sz=0.5_iwp*(facty+lpy)+0.25_iwp*(facty+lpy)**2-0.5_iwp*(facty-lpy)-0.25_iwp*(facty-lpy)**2
+            ELSE
+                Sz=0.75_iwp-0.5_iwp*(facty-lpy)-0.25_iwp*(facty-lpy)**2
+            END IF       
 
-    ELSE IF(n==3)THEN   !Comparing with node 3
-    IF(factx<=-0.50_iwp)THEN
-    Sr=0.5_iwp*(factx+lpx)*(1.0_iwp+0.5_iwp*(factx+lpx))+0.25_iwp
-    ELSE IF(factx>=-0.50_iwp.and.factx<=0.5_iwp)THEN    
-    Sr=0.5_iwp*(factx+lpx)+0.25_iwp*(factx+lpx)**2-0.5_iwp*(factx-lpx)-0.25_iwp*(factx-lpx)**2
-    ELSE
-    Sr=0.75_iwp-0.5_iwp*(factx-lpx)-0.25_iwp*(factx-lpx)**2
-    END IF 
+        ELSE IF(n==3)THEN   !Comparing with node 3
+            IF(factx<=-0.50_iwp)THEN
+                Sr=0.5_iwp*(factx+lpx)*(1.0_iwp+0.5_iwp*(factx+lpx))+0.25_iwp
+            ELSE IF(factx>=-0.50_iwp.and.factx<=0.5_iwp)THEN    
+                Sr=0.5_iwp*(factx+lpx)+0.25_iwp*(factx+lpx)**2-0.5_iwp*(factx-lpx)-0.25_iwp*(factx-lpx)**2
+            ELSE
+                Sr=0.75_iwp-0.5_iwp*(factx-lpx)-0.25_iwp*(factx-lpx)**2
+            END IF 
 
-    IF(facty<=-0.50_iwp)THEN
-    Sz=0.5_iwp*(facty+lpy)*(1.0_iwp+0.5_iwp*(facty+lpy))+0.25_iwp
-    ELSE IF(facty>=-0.50_iwp.and.facty<=0.5_iwp)THEN    
-    Sz=0.5_iwp*(facty+lpy)+0.25_iwp*(facty+lpy)**2-0.5_iwp*(facty-lpy)-0.25_iwp*(facty-lpy)**2
-    ELSE
-    Sz=0.75_iwp-0.5_iwp*(facty-lpy)-0.25_iwp*(facty-lpy)**2
-    END IF 
+            IF(facty<=-0.50_iwp)THEN
+                Sz=0.5_iwp*(facty+lpy)*(1.0_iwp+0.5_iwp*(facty+lpy))+0.25_iwp
+            ELSE IF(facty>=-0.50_iwp.and.facty<=0.5_iwp)THEN    
+                Sz=0.5_iwp*(facty+lpy)+0.25_iwp*(facty+lpy)**2-0.5_iwp*(facty-lpy)-0.25_iwp*(facty-lpy)**2
+            ELSE
+                Sz=0.75_iwp-0.5_iwp*(facty-lpy)-0.25_iwp*(facty-lpy)**2
+            END IF 
 
-    ELSE IF(n==4)THEN      !Comparing with node 4
-    IF(factx<=-0.50_iwp)THEN
-    Sr=0.5_iwp*(factx+lpx)*(1.0_iwp+0.5_iwp*(factx+lpx))+0.25_iwp
-    ELSE IF(factx>=-0.50_iwp.and.factx<=0.5_iwp)THEN    
-    Sr=0.5_iwp*(factx+lpx)+0.25_iwp*(factx+lpx)**2-0.5_iwp*(factx-lpx)-0.25_iwp*(factx-lpx)**2
-    ELSE
-    Sr=0.75_iwp-0.5_iwp*(factx-lpx)-0.25_iwp*(factx-lpx)**2
-    END IF 
+        ELSE IF(n==4)THEN   !Comparing with node 4
+            IF(factx<=-0.50_iwp)THEN
+                Sr=0.5_iwp*(factx+lpx)*(1.0_iwp+0.5_iwp*(factx+lpx))+0.25_iwp
+            ELSE IF(factx>=-0.50_iwp.and.factx<=0.5_iwp)THEN    
+                Sr=0.5_iwp*(factx+lpx)+0.25_iwp*(factx+lpx)**2-0.5_iwp*(factx-lpx)-0.25_iwp*(factx-lpx)**2
+            ELSE
+                Sr=0.75_iwp-0.5_iwp*(factx-lpx)-0.25_iwp*(factx-lpx)**2
+            END IF 
 
-    IF(facty<=-0.50_iwp)THEN
-    Sz=0.5_iwp*(facty+lpy)*(1.0_iwp-0.5_iwp*(facty+lpy))+0.75_iwp
-    ELSE IF(facty>=-0.50_iwp.and.facty<=0.5_iwp)THEN    
-    Sz=0.5_iwp*(facty+lpy)-0.25_iwp*(facty+lpy)**2-0.5_iwp*(facty-lpy)+0.25_iwp*(facty-lpy)**2
-    ELSE
-    Sz=0.25_iwp-0.5_iwp*(facty-lpy)+0.25_iwp*(facty-lpy)**2
-    END IF 
-    END IF  
+            IF(facty<=-0.50_iwp)THEN
+                Sz=0.5_iwp*(facty+lpy)*(1.0_iwp-0.5_iwp*(facty+lpy))+0.75_iwp
+            ELSE IF(facty>=-0.50_iwp.and.facty<=0.5_iwp)THEN    
+                Sz=0.5_iwp*(facty+lpy)-0.25_iwp*(facty+lpy)**2-0.5_iwp*(facty-lpy)+0.25_iwp*(facty-lpy)**2
+            ELSE
+                Sz=0.25_iwp-0.5_iwp*(facty-lpy)+0.25_iwp*(facty-lpy)**2
+            END IF 
+        END IF  
 
-    IF(n==1)THEN  !Comparing with node 1
+        IF(n==1)THEN        !Comparing with node 1
+            dSr=(Xi1-Xi2)/(two*lp)
+            dSz=(ni1-ni2)/(two*lp)
+        ELSE IF(n==2)THEN   !Comparing with node 2
+            dSr=(Xi1-Xi2)/(two*lp)
+            dSz=(ni2-ni1)/(two*lp)
+        ELSE IF(n==3)THEN   !Comparing with node 3
+            dSr=(Xi2-Xi1)/(two*lp)
+            dSz=(ni2-ni1)/(two*lp)
+        ELSE IF(n==4)THEN   !Comparing with node 4
+            dSr=(Xi2-Xi1)/(two*lp)
+            dSz=(ni1-ni2)/(two*lp)
+        END IF  
 
-    dSr=(Xi1-Xi2)/(two*lp)
+        funGIMP(m)=Sr*Sz
+        IF(abs(funGIMP(m))>2)THEN
+            Sr=Sr
+            PAUSE
+        END IF    
+        IF((Sr<=0.0.or.Sz<=0.0))THEN
+            derGIMP(1,m)=0.0
+            derGIMP(2,m)=0.0
+        ELSE  
+            derGIMP(1,m)=dSr*Sz
+            derGIMP(2,m)=dSz*Sr
+        END IF
 
-    dSz=(ni1-ni2)/(two*lp)
-
-    ELSE IF(n==2)THEN    !Comparing with node 2
-
-    dSr=(Xi1-Xi2)/(two*lp)
-
-    dSz=(ni2-ni1)/(two*lp)
-
-    ELSE IF(n==3)THEN   !Comparing with node 3
-
-    dSr=(Xi2-Xi1)/(two*lp)
-
-    dSz=(ni2-ni1)/(two*lp)
-
-    ELSE IF(n==4)THEN      !Comparing with node 4
-
-    dSr=(Xi2-Xi1)/(two*lp)
-
-    dSz=(ni1-ni2)/(two*lp)
-
-    END IF  
-
-
-
-
-    funGIMP(m)=Sr*Sz
-    IF(abs(funGIMP(m))>2)THEN
-    Sr=Sr
-    PAUSE
-    END IF    
-    IF((Sr<=0.0.or.Sz<=0.0))THEN
-    derGIMP(1,m)=0.0
-    derGIMP(2,m)=0.0
-    ELSE  
-    derGIMP(1,m)=dSr*Sz
-    derGIMP(2,m)=dSz*Sr
-    END IF
-
-    m=m+1
-
-    !END DO Deriv_Fun
+        m=m+1
 
     END DO Fun_Deriv
 
@@ -662,7 +645,10 @@ SUBROUTINE GIMP_funder(s,nip,g_coord,cellsize,gm_coord,lp_mp,GIMP_nodes,gimptol,
             miny=g_coord(2,nod)     !--miny coordinate of node 'i'
             ypoint=gm_coord(2,s)    !--ypoint coordinate of material point 's'
             ydist=(-ypoint)-(-miny) !--ydist distance between node 'i' and material point 's' (if material point is below the node, distance is positive)
-            
+            print*, s, nod
+            print*, minx, miny
+            print*, xpoint, ypoint
+            print*, xdist, ydist
             !--GIMP shape functions and derivatives in the x direction
             IF(g_coord(1,nod)<=gm_coord(1,s))THEN
                 fact=xdist

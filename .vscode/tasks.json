@@ -1,0 +1,78 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "compile_p61",
+            "type": "shell",
+            "command": "ifx",
+            "args": [
+                "-g2", "-static-intel",
+                "-Tf../chap06/p61.f03", "-free",
+                "./*.a",
+                "-o", "p61/p61"
+            ],
+            "presentation": {
+                "panel": "shared", 
+                "reveal": "always",
+                "focus": true
+            },
+            "options": {
+                "cwd": "${workspaceFolder}/Reference/Programming-FEM-Griffiths/intel_binary"
+            }
+        },
+        {
+            "label": "compile_p65",
+            "type": "shell",
+            "command": "ifx",
+            "args": [
+                "-g2", "-static-intel",
+                "-Tf../chap06/p65.f03", "-free",
+                "./*.a",
+                "-o", "p65/p65"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/Reference/Programming-FEM-Griffiths/intel_binary"
+            }
+        },
+        {
+            "label": "compile_p41",
+            "type": "shell",
+            "command": "ifx",
+            "args": [
+                "-g2", "-static-intel",
+                "-Tf../chap04/p41.f03", "-free",
+                "./femlib.a",
+                "-o", "p41/p41"
+            ],
+            "presentation": {
+                "panel": "shared", 
+                "reveal": "always",
+                "focus": true
+            },
+            "options": {
+                "cwd": "${workspaceFolder}/Reference/Programming-FEM-Griffiths/intel_binary"
+            }
+        },
+        {
+            "label": "compile_p51",
+            "type": "shell",
+            "command": "ifx",
+            "args": [
+                "-g2", "-static-intel",
+                "-Tf../chap05/p51.f03", "-free",
+                "./femlib.a",
+                "-o", "p51/p51"
+            ],
+            "presentation": {
+                "panel": "shared", 
+                "reveal": "always",
+                "focus": true
+            },
+            "options": {
+                "cwd": "${workspaceFolder}/Reference/Programming-FEM-Griffiths/intel_binary"
+            }
+        }
+    ]
+}

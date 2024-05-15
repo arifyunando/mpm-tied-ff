@@ -159,7 +159,9 @@ ALLOCATE(mbod(bod)%prop(mbod(bod)%nprops,mbod(bod)%np_types))
 READ(10,*)mbod(bod)%prop
 mbod(bod)%nx2=0;mbod(bod)%ny2=0
 
-smethod=3
+
+!Select "smethod" which indicates the use of MPM(smethod=1), GIMP(smethod=2), or CMPM(smethod=3)
+smethod=2
 gravbod1=1
 ploop=0
 
@@ -861,7 +863,6 @@ time_steps: DO w=1,10000000
         mbod(bod)%mv=zero
         mbod(bod)%kp=zero
         KM_MV:DO k=1,mbod(bod)%nmps
-            !iel=mbod(bod)%a_ele(k)
             IF(mbod(bod)%kconst(1)==1)THEN
                 CALL sample(element,points,weights)
                 !-constant stiffness for each activated element
@@ -884,6 +885,7 @@ time_steps: DO w=1,10000000
                             CALL shape_der(der,points,i)
                             jac = MATMUL(der,coord)
                             det = determinant(jac)
+                            print*, det
                             CALL invert(jac)
                             deriv = MATMUL(jac,der)
                             CALL beemat(bee,deriv)

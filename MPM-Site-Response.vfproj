@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<VisualStudioProject ProjectCreator="Intel Fortran" Keyword="Application" Version="11.0" ProjectIdGuid="{9A66E300-0DD7-41A4-B42A-53C265DC16C6}">
+<VisualStudioProject ProjectCreator="Intel Fortran" Keyword="Application" Version="11.0" ProjectIdGuid="{23FD542F-4A9E-457C-80B9-A5C5E097B86E}">
 	<Platforms>
 		<Platform Name="Win32"/>
 		<Platform Name="x64"/>
@@ -17,7 +17,7 @@
 			<Tool Name="VFManifestTool" SuppressStartupBanner="true"/>
 		</Configuration>
 		<Configuration Name="Release|Win32" UseCompiler="ifortCompiler" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)">
-			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" Optimization="optimizeFull" RuntimeLibrary="rtMultiThreadedDLL"/>
+			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" RuntimeLibrary="rtMultiThreadedDLL"/>
 			<Tool Name="VFLinkerTool" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" SubSystem="subSystemConsole"/>
 			<Tool Name="VFResourceCompilerTool"/>
 			<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
@@ -39,7 +39,7 @@
 			<Tool Name="VFManifestTool" SuppressStartupBanner="true"/>
 		</Configuration>
 		<Configuration Name="Release|x64" UseCompiler="ifxCompiler" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)">
-			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" Optimization="optimizeFull" RuntimeLibrary="rtMultiThreadedDLL"/>
+			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" RuntimeLibrary="rtMultiThreadedDLL"/>
 			<Tool Name="VFLinkerTool" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" SubSystem="subSystemConsole"/>
 			<Tool Name="VFResourceCompilerTool"/>
 			<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
@@ -51,22 +51,12 @@
 		</Configuration>
 	</Configurations>
 	<Files>
-		<Filter Name="Libraries">
-		<Filter Name="fem">
-		<File RelativePath=".\Libraries\fem\geom.f90"/>
-		<File RelativePath=".\Libraries\fem\gimp.f90"/>
-		<File RelativePath=".\Libraries\fem\Logging.f90"/>
-		<File RelativePath=".\Libraries\fem\main.f90"/>
-		<File RelativePath=".\Libraries\fem\mpm.f90"/>
-		<File RelativePath=".\Libraries\fem\sparse_lib.f90"/></Filter>
-		<Filter Name="mpm">
+		<File RelativePath=".\Source\Earthquake validation.f90"/>
 		<File RelativePath=".\Libraries\mpm\Logging.f90"/>
 		<File RelativePath=".\Libraries\mpm\mpm-geom.f90"/>
 		<File RelativePath=".\Libraries\mpm\mpm-gimp.f90"/>
 		<File RelativePath=".\Libraries\mpm\mpm-main.f90"/>
-		<File RelativePath=".\Libraries\mpm\mpm-mpm.f90"/></Filter></Filter>
-		<Filter Name="Source">
-		<File RelativePath=".\Source\Earthquake validation.f90"/></Filter>
+		<File RelativePath=".\Libraries\mpm\mpm-mpm.f90"/>
 	</Files>
 	<Globals/>
 </VisualStudioProject>
