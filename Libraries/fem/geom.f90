@@ -8,13 +8,11 @@ SUBROUTINE mesh_size_slope9(nx1,nx2,ny1,ny2,nn,nels)
     !  of nodes (nn) in a 2-d geometry-created mesh.
     !
     IMPLICIT NONE
-
-    INTEGER,INTENT(IN)::nx1,nx2,ny1,ny2
-    INTEGER,INTENT(OUT)::nels,nn
+    INTEGER,INTENT(IN) :: nx1,nx2,ny1,ny2
+    INTEGER,INTENT(OUT):: nels,nn
     
-    nels=nx1*(ny1+ny2)+(nx2*ny2)
-    nn=((ny1+ny2)*2+1)*(nx1*2+1)+(ny2*2+1)*(nx2*2)
-        
+    nels = nx1*(ny1+ny2)+(nx2*ny2)
+    nn   = ((ny1+ny2)*2+1)*(nx1*2+1)+(ny2*2+1)*(nx2*2)
     RETURN
 END SUBROUTINE mesh_size_slope9
 

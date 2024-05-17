@@ -645,10 +645,7 @@ SUBROUTINE GIMP_funder(s,nip,g_coord,cellsize,gm_coord,lp_mp,GIMP_nodes,gimptol,
             miny=g_coord(2,nod)     !--miny coordinate of node 'i'
             ypoint=gm_coord(2,s)    !--ypoint coordinate of material point 's'
             ydist=(-ypoint)-(-miny) !--ydist distance between node 'i' and material point 's' (if material point is below the node, distance is positive)
-            print*, s, nod
-            print*, minx, miny
-            print*, xpoint, ypoint
-            print*, xdist, ydist
+
             !--GIMP shape functions and derivatives in the x direction
             IF(g_coord(1,nod)<=gm_coord(1,s))THEN
                 fact=xdist

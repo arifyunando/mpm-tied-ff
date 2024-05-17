@@ -161,7 +161,7 @@ mbod(bod)%nx2=0;mbod(bod)%ny2=0
 
 
 !Select "smethod" which indicates the use of MPM(smethod=1), GIMP(smethod=2), or CMPM(smethod=3)
-smethod=2
+smethod=3
 gravbod1=1
 ploop=0
 
@@ -236,7 +236,7 @@ count_nodes: DO bod=1,size(mbod)
     !- IF mbod(bod)%kconst=1, then the stiffness in the full domain will be constant
     !- any other value avoid using a constant stiffness
     ALLOCATE(mbod(bod)%kconst(1))
-    mbod(bod)%kconst=0
+    mbod(bod)%kconst=1
 END DO count_nodes
 
 ALLOCATE(                                                                       &
@@ -445,8 +445,9 @@ END DO elements_2
 
 ! --------------- find out in which element the material point is located in --------------
 ! a_ele(iel) = element id for each material point
-! c_ele(iel)= total of MP inside each element
-! k_ele(iel)= total of MP in the domain
+! c_ele(iel) = total of MP inside each element
+! k_ele(iel) = total of MP in the domain
+! d_ele(iel) = activated element array (1 active/0 deactive)
 ! b_ele(k) = list of elements with MP inside
 
 Flags: DO bod=1,size(mbod)
@@ -885,7 +886,7 @@ time_steps: DO w=1,10000000
                             CALL shape_der(der,points,i)
                             jac = MATMUL(der,coord)
                             det = determinant(jac)
-                            print*, det
+                            !print*, det
                             CALL invert(jac)
                             deriv = MATMUL(jac,der)
                             CALL beemat(bee,deriv)
@@ -1012,7 +1013,6 @@ time_steps: DO w=1,10000000
 
         iters=iters+1
 
-        !IF(iters==0)THEN    
         DO bod=1,size(mbod)
             IF(mbod(bod)%nmps>1)THEN 
                 MP_VelAccP: DO i=1,mbod(bod)%nmps
@@ -1082,8 +1082,6 @@ time_steps: DO w=1,10000000
             END IF
         END DO 
 
-
-
         DO bod=1,size(mbod)
             IF(mbod(bod)%nmps>1)THEN    
                 mbod(bod)%ddylds=zero
@@ -1094,10 +1092,31 @@ time_steps: DO w=1,10000000
                     g=mbod(bod)%g_g(:,iel)
                     IF(smethod==2.or.smethod==3)THEN 
                         values=mbod(bod)%valuesg(i)
-                        ALLOCATE(derextend(nodof,values),jac_coord(values,nodof),funextend2(values*2,2),	&
-                        eldddylds(values*2),beeextend(nst,values*nodof))
-                        eldddylds=zero;funextend2=zero;beeextend=zero;derextend=zero;jac_coord=zero
-                        CALL GIMP_funder2(i,nip,g_coord,cellsize,mbod(bod)%gm_coord,mbod(bod)%lp_mp,mbod(bod)%GIMP_nodes,mbod(bod)%gimptol,derextend,funextend2)  !--creates the matrix with the values of shape functions and derivatives
+                        ALLOCATE(                                               &
+                            derextend(nodof,values),                            &
+                            jac_coord(values,nodof),                            &
+                            funextend2(values*2,2),	                            &
+                            eldddylds(values*2),                                &
+                            beeextend(nst,values*nodof)                         &
+                        )
+
+                        eldddylds   = zero
+                        funextend2  = zero
+                        beeextend   = zero
+                        derextend   = zero
+                        jac_coord   = zero
+
+                        CALL GIMP_funder2(                                      &
+                            i,nip,g_coord,                                      &
+                            cellsize,                                           &
+                            mbod(bod)%gm_coord,                                 &
+                            mbod(bod)%lp_mp,                                    &
+                            mbod(bod)%GIMP_nodes,                               &
+                            mbod(bod)%gimptol,                                  &
+                            derextend,                                          &
+                            funextend2                                          &
+                        )  !--creates the matrix with the values of shape functions and derivatives
+
                         CALL gimpfunform(i,iel,eldddylds,mbod(bod)%nf,mbod(bod)%GIMP_nodes,values,mbod(bod)%g_g,mvval)  !--collect in eldddylds the nuber of the equations in the support domain
                         CALL Sup_coord(i,mbod(bod)%GIMP_nodes,g_coord,jac_coord)
                         jac=MATMUL(derextend,jac_coord)
@@ -1105,7 +1124,9 @@ time_steps: DO w=1,10000000
                         CALL invert(jac)
                         derextend=MATMUL(jac,derextend)
                         CALL beematgimp(i,beeextend,derextend,values)
-                        mbod(bod)%ddylds(eldddylds)=mbod(bod)%ddylds(eldddylds)+MATMUL(mbod(bod)%m_stress(:,i),beeextend)*(4.0*mbod(bod)%lp_mp(1,i)*mbod(bod)%lp_mp(2,i))!*mbod(bod)%m_volume(i)
+                        mbod(bod)%ddylds(eldddylds) = mbod(bod)%ddylds(eldddylds)+&
+                            MATMUL(mbod(bod)%m_stress(:,i),beeextend) *         & 
+                            (4.0*mbod(bod)%lp_mp(1,i)*mbod(bod)%lp_mp(2,i))
                         DEALLOCATE(derextend,funextend2,eldddylds,jac_coord,beeextend)
                     ELSE
                         CALL shape_der(der,mbod(bod)%mpoints,i)
@@ -1115,7 +1136,8 @@ time_steps: DO w=1,10000000
                         deriv=MATMUL(jac,der)
                         CALL beemat(bee,deriv)
                         waverage=1.0_iwp
-                        mbod(bod)%ddylds(g)=mbod(bod)%ddylds(g)+MATMUL(mbod(bod)%m_stress(:,i),bee)*mbod(bod)%m_volume(i)!*waverage 
+                        mbod(bod)%ddylds(g) = mbod(bod)%ddylds(g) + &
+                            MATMUL(mbod(bod)%m_stress(:,i),bee)*mbod(bod)%m_volume(i)
                     END IF
                     mbod(bod)%ddylds(0)=zero 
                 END DO Fint_load
@@ -1129,8 +1151,16 @@ time_steps: DO w=1,10000000
         DO bod=1,size(mbod)
             IF(w<=accdata)THEN
                 DO i=1,nn
-                    IF(g_coord(2,i)<lowbound+cellsize+0.01_iwp.and.mbod(bod)%nf(1,i)>0)THEN
-                        mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i))=mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i))+(mbod(bod)%ground_acc(w)-mbod(bod)%kinup_d2x1(mbod(bod)%nf(1,i)))
+                    IF(                                                         &
+                        g_coord(2,i)<lowbound+cellsize+0.01_iwp .and.           &
+                        mbod(bod)%nf(1,i)>0                                     &
+                    ) THEN
+                        mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i)) =        &
+                            mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i)) +    &
+                            (                                                   &
+                                mbod(bod)%ground_acc(w) -                       &
+                                mbod(bod)%kinup_d2x1(mbod(bod)%nf(1,i))         &
+                            )
                         mbod(bod)%kinup_Ground_d2x1(0)=zero
                     END IF    
                 END DO
@@ -1139,14 +1169,19 @@ time_steps: DO w=1,10000000
 
         Ground_F: DO bod=1,size(mbod)
             IF(mbod(bod)%nmps>1)THEN 
-                CALL linmul_sky(mbod(bod)%mv,mbod(bod)%kinup_Ground_d2x1,mbod(bod)%f_earth,mbod(bod)%kdiag)  !--Multiplication of the mass matrix per the acceleration vector vcm=Ma 
+                !--Multiplication of the mass matrix per the acceleration vector vcm=Ma 
+                CALL linmul_sky(mbod(bod)%mv,mbod(bod)%kinup_Ground_d2x1,mbod(bod)%f_earth,mbod(bod)%kdiag)  
                 mbod(bod)%f_earth(0)=zero
             END IF
         END DO Ground_F 
 
-        !-Kinematic update of acceleration and velocity without considering any boundary condition (contact)
+        !-Kinematic update of acceleration and velocity without considering any 
+        ! boundary condition (contact)
         DO bod=1,size(mbod)
-            mbod(bod)%kinup_d2x1=(4.0_iwp*mbod(bod)%x1/dtim**2)-(4.0_iwp*mbod(bod)%d1x1/dtim)-mbod(bod)%d2x1   !--a1= acceleration at time = t+Dt in the nodes = d1x1/f2+d2x1*(pt5/beta-one) from the solution in the nodes 
+            !--a1= acceleration at time = t+Dt in the nodes = d1x1/f2+d2x1*(pt5/beta-one) 
+            ! from the solution in the nodes 
+            mbod(bod)%kinup_d2x1 = (4.0_iwp*mbod(bod)%x1/dtim**2) -             &
+                                   (4.0_iwp*mbod(bod)%d1x1/dtim)-mbod(bod)%d2x1   
             mbod(bod)%kinup_d2x1(0)=zero
         END DO 
 
@@ -1161,14 +1196,19 @@ time_steps: DO w=1,10000000
 
         Force_MA: DO bod=1,size(mbod)
             IF(mbod(bod)%nmps>1)THEN 
-                CALL linmul_sky(mbod(bod)%mv,mbod(bod)%kinup_d2x1,mbod(bod)%vcm,mbod(bod)%kdiag)  !--Multiplication of the mass matrix per the acceleration vector vcm=Ma 
+                !--Multiplication of the mass matrix per the acceleration vector vcm=Ma 
+                CALL linmul_sky(mbod(bod)%mv,mbod(bod)%kinup_d2x1,mbod(bod)%vcm,mbod(bod)%kdiag)  
                 mbod(bod)%vcm(0)=zero   
             END IF
         END DO Force_MA   
 
         DISPLACEMENTS: DO bod=1,size(mbod)
             mbod(bod)%loads=zero
-            mbod(bod)%loads=mbod(bod)%gravlo-mbod(bod)%ddylds-mbod(bod)%vcm+mbod(bod)%f_earth-mbod(bod)%cdamp
+            mbod(bod)%loads=mbod(bod)%gravlo-                                   &
+                            mbod(bod)%ddylds-                                   &
+                            mbod(bod)%vcm+                                      &
+                            mbod(bod)%f_earth-                                  &
+                            mbod(bod)%cdamp
             mbod(bod)%loads(0)=zero 
             CALL spabac(mbod(bod)%kp,mbod(bod)%loads,mbod(bod)%kdiag)  
             mbod(bod)%loads(0)=zero 
@@ -1178,7 +1218,8 @@ time_steps: DO w=1,10000000
 
         DO bod=1,size(mbod)
             mbod(bod)%kinup_d2x1=(4.0_iwp*mbod(bod)%x1/dtim**2)-(4.0_iwp*mbod(bod)%d1x1/dtim)-mbod(bod)%d2x1 
-            mbod(bod)%kinup_d1x1=2.0_iwp*mbod(bod)%x1/dtim-mbod(bod)%d1x1     !--Upgrade lagrangian phase, in the paper (wang)pag.162: v=(2/Dt)u-v  
+            !--Upgrade lagrangian phase, in the paper (wang)pag.162: v=(2/Dt)u-v  
+            mbod(bod)%kinup_d1x1=2.0_iwp*mbod(bod)%x1/dtim-mbod(bod)%d1x1       
             mbod(bod)%kinup_d1x1(0)=zero;mbod(bod)%kinup_d2x1(0)=zero
         END DO 
 

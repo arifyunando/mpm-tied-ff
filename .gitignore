@@ -6,3 +6,4 @@
 *.exe
 *.mod
 *.u2d
+**/build
