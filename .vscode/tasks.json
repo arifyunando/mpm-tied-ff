@@ -4,6 +4,19 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "compile_femlibrary",
+            "type": "shell",
+            "command": "source build_lib.sh",
+            "presentation": {
+                "panel": "shared", 
+                "reveal": "always",
+                "focus": true
+            },
+            "options": {
+                "cwd": "${workspaceFolder}/Reference/Programming-FEM-Griffiths/intel_binary"
+            }
+        },
+        {
             "label": "compile_p61",
             "type": "shell",
             "command": "ifx",

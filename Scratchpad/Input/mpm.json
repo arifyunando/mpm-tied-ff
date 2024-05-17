@@ -1,0 +1,75 @@
+{
+    "title": "Tied-FF-MPM",
+    "mesh": {
+        "mesh": "mesh.txt",
+        "entity_sets": "entity_sets.json",
+        "boundary_conditions": {
+            "displacement_constraints": [
+                {
+                    "nset_id": 1,
+                    "dir": 1,
+                    "displacement": 0.00
+                },
+                {
+                    "nset_id": 2,
+                    "dir": 2,
+                    "displacement": 0.0
+                }
+            ]
+        }
+    },
+    "particles": [
+        {
+            "generator": {
+                "check_duplicates": true,
+                "location": "particles.txt",
+                "io_type": "Ascii2D",
+                "pset_id": 0,
+                "particle_type": "P2D",
+                "material_id": 1,
+                "type": "file"
+            }
+        }
+    ],
+    "materials": [
+        {
+            "id": 0,
+            "type": "Newtonian2D",
+            "density": 1800,
+            "bulk_modulus": 1.0E+06,
+            "dynamic_viscosity": 0
+        },
+        {
+            "id": 1,
+            "type": "LinearElastic2D",
+            "density": 1800,
+            "youngs_modulus": 1.0E+06,
+            "poisson_ratio": 0
+        }
+    ],
+    "external_loading_conditions": {
+        "gravity": [
+            0,
+            -9.81
+        ]
+    },
+    "analysis": {
+        "type": "MPMExplicit2D",
+        "stress_update": "usl",
+        "dt": 0.00001,
+        "uuid": "hydrostatic_usl",
+        "nsteps": 10000,
+        "max_iter": 100,
+        "velocity_update": true,
+        "resume": {
+            "resume": false,
+            "uuid": "hydrostatic_usl",
+            "step": 7000
+        }
+    },
+    "post_processing": {
+            "path": "results/",
+            "output_steps": 1000,
+            "vtk": ["displacements", "stresses"]
+        }
+  }

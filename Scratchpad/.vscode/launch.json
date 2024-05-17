@@ -1,0 +1,20 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Tied-FF-MPM",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Tied-FF-MPM.run",
+            "args": ["-f", "../Input/", "-i", "mpm.json"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build",
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "preLaunchTask": "build"
+        }
+    ]
+}
