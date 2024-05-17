@@ -238,8 +238,7 @@ MODULE MPM_IO
         WRITE(10,'(1A6,2I6)')"CELLS", nels, nels*(1+4)
         DO iel=1, nels
             WRITE(10,'(5I5)') node_type,  &
-            ! num(1,iel)-1, num(4,iel)-1, num(3,iel)-1, num(2,iel)-1
-            num(1,iel), num(4,iel), num(3,iel), num(2,iel)
+              num(1,iel)-1, num(4,iel)-1, num(3,iel)-1, num(2,iel)-1
         END DO
 
         WRITE(10,'(a)')""

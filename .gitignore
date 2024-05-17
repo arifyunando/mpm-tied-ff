@@ -1,9 +1,12 @@
+**/build
+**/.ipynb_checkpoints
+
 /Output
 /Input
 /Debug
 /Release
 /x64
+
 *.exe
 *.mod
 *.u2d
-**/build
