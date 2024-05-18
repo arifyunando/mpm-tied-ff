@@ -1,11 +1,11 @@
-MODULE MPM_IO
+MODULE IO
   IMPLICIT NONE
   INTEGER, PARAMETER, PRIVATE :: iwp=SELECTED_REAL_KIND(15)
   REAL(iwp), PARAMETER, PRIVATE :: zero=0.0_iwp, one=1.0_iwp, two=2.0_iwp
 
   CONTAINS
 
-  SUBROUTINE GET_INPUT_DIRECTORY(directory, filename)
+  SUBROUTINE IO_GET_INPUT_DIRECTORY(directory, filename)
     !
     ! This subroutine get the input filename and directory from 
     ! command-line arguments. Directory is placed after `-f` flag and 
@@ -24,20 +24,20 @@ MODULE MPM_IO
         CALL get_command_argument(i+1, filename)
       END IF
     END DO
-  END SUBROUTINE GET_INPUT_DIRECTORY
+  END SUBROUTINE IO_GET_INPUT_DIRECTORY
 
 
-  SUBROUTINE LOAD_JSON_DATA(directory, filename, json_output)
+  SUBROUTINE IO_LOAD_JSON(directory, filename, json_output)
     USE JSON_MODULE
     IMPLICIT NONE
     CHARACTER(*), INTENT(IN) :: directory, filename
     TYPE(json_file), INTENT(OUT) :: json_output
     CALL json_initialize()
     CALL json_output%load_file(filename=trim(directory)//trim(filename))
-  END SUBROUTINE LOAD_JSON_DATA
+  END SUBROUTINE IO_LOAD_JSON
 
 
-  SUBROUTINE LOAD_MESH_DATA(directory, filename, g_coords, g_elements)
+  SUBROUTINE IO_LOAD_MESH(directory, filename, g_coords, g_elements)
     !
     ! Read formatted mesh file and obtain both node coordinates and 
     ! element connectivity matrix
@@ -78,10 +78,10 @@ MODULE MPM_IO
       READ(10, *) g_elements(:, i)
     END DO
     CLOSE(10)
-  END SUBROUTINE LOAD_MESH_DATA
+  END SUBROUTINE IO_LOAD_MESH
 
 
-  SUBROUTINE LOAD_PARTICLE_DATA(directory, filename, g_mpcoords)
+  SUBROUTINE IO_LOAD_PARTICLE(directory, filename, g_mpcoords)
     !
     !
     !
@@ -114,10 +114,10 @@ MODULE MPM_IO
     DO i = 1, n_particles
       READ(10, *) g_mpcoords(:, i)
     END DO
-  END SUBROUTINE LOAD_PARTICLE_DATA
+  END SUBROUTINE IO_LOAD_PARTICLE
 
 
-  SUBROUTINE POINT_VIZ(input,coord,a_ins,evpt,m_stress,m_stress_inc,acc,        &
+  SUBROUTINE IO_POINT_VIZ(input,coord,a_ins,evpt,m_stress,m_stress_inc,acc,     &
     velocity,cohesion,devstress,meanstress,mpyield,directory,argv)
     !
     ! SUBROUTINE used to save visualise outputs to Paraview format
@@ -185,10 +185,10 @@ MODULE MPM_IO
     END DO
 
     CLOSE(10)
-  END SUBROUTINE POINT_VIZ
+  END SUBROUTINE IO_POINT_VIZ
 
 
-  SUBROUTINE PARAVIEW(input,node_type,coord,num,nf,kdiag,diag,loads,            &
+  SUBROUTINE IO_PARAVIEW(input,node_type,coord,num,nf,kdiag,diag,loads,         &
     ddylds,gravlo,d1x1,d2x1,vcm,fcont,normals,f_fint,kv,mv,directory,argv)
     !
     ! Subroutine used to save visualization output of computational mesh
@@ -350,6 +350,6 @@ MODULE MPM_IO
 
     ! Close File
     CLOSE(10)
-  END SUBROUTINE PARAVIEW
+  END SUBROUTINE IO_PARAVIEW
 
-END MODULE MPM_IO
+END MODULE IO

@@ -8,7 +8,7 @@
                 {
                     "nset_id": 1,
                     "dir": 1,
-                    "displacement": 0.00
+                    "displacement": 0.0
                 },
                 {
                     "nset_id": 2,
@@ -21,26 +21,26 @@
     "particles": [
         {
             "generator": {
-                "check_duplicates": true,
+                "name": "",
                 "location": "particles.txt",
                 "io_type": "Ascii2D",
-                "pset_id": 0,
-                "particle_type": "P2D",
-                "material_id": 1,
-                "type": "file"
+                "material_id": 1
             }
         }
     ],
     "materials": [
         {
-            "id": 0,
-            "type": "Newtonian2D",
-            "density": 1800,
-            "bulk_modulus": 1.0E+06,
-            "dynamic_viscosity": 0
+            "id" : 1,
+            "type": "MohrCoulomb2D",
+            "density": 2000.0,
+            "poisson_ratio": 0.3,
+            "youngs_modulus": 2.0E+7,
+            "friction": 25,
+            "dilation": 0,
+            "cohesion": 2.0E4
         },
         {
-            "id": 1,
+            "id": 2,
             "type": "LinearElastic2D",
             "density": 1800,
             "youngs_modulus": 1.0E+06,

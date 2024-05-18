@@ -1,7 +1,7 @@
 PROGRAM Tied_Free_Field_MPM
-  USE MPM_Core
-  USE FEM_Core
-  USE MPM_IO
+  USE MPM_CORE
+  USE FEM_CORE
+  USE IO
   USE LOGGING
   USE JSON_MODULE
   IMPLICIT NONE
@@ -10,13 +10,12 @@ PROGRAM Tied_Free_Field_MPM
   REAL(iwp)          :: zero=0.0_iwp, one=1.0_iwp, two=2.0_iwp, three=3.0_iwp
   CHARACTER(128)     :: input_directory, input_filename
   CHARACTER(:), ALLOCATABLE :: output_directory
-  CHARACTER(:), ALLOCATABLE :: mesh_filename, particles_filename, entity_filename
 
   ! Data Structure
-  TYPE(mpm_body)  :: mbod
-  TYPE(fem_body)  :: fbod(2)
-  TYPE(mpm_grid)  :: mesh
-  TYPE(json_file) :: input_json, entity_json
+  TYPE(json_file) :: input_json           ! Main input file
+  TYPE(mpm_body), ALLOCATABLE  :: mbod(:) ! may have multiple mp bodies
+  TYPE(fem_body), ALLOCATABLE  :: fbod(:) ! may have multiple fe bodies
+  TYPE(mpm_grid)  :: mesh                 ! main computaion mesh, singleton
 
   !--- Time Stepping and Iteration Variables
   ! Time Stepping
@@ -24,76 +23,90 @@ PROGRAM Tied_Free_Field_MPM
   REAL(iwp) :: dt
   ! Plastic iteration
   INTEGER   :: iteration, iteration_limit
+  LOGICAL   :: converged, found
+
+  ! Dummies
+  INTEGER :: i,j,k,index,dummy
+  CHARACTER(1) :: i_char
 
   !**************************** CONSTANT PARAMETER ****************************!
-  INTEGER :: nst=4    ! Number of Stress/Strain Terms (3: Plane Stress/Strain, 4: Axisymmetric, 6: 3-Dimension)
+  INTEGER :: nst=4    ! Number of Stress/Strain Terms 
+                      ! (3: Plane Stress/Strain, 4: Axisymmetric, 6: 3-D)
+                      ! With appropriate Linear Derivative Operator (Bee),
+                      ! it is also possible to have Plane Stress/Strain
+                      ! conditions with nst = 4
   INTEGER :: nodof=2  ! Number of Degree of Freedom
 
   !**************************** PREPARATION PHASE *****************************!
   !--- Initiate Program Settings  
 
-  !--- Load Input Data and Get Input/Output Path
-  CALL GET_INPUT_DIRECTORY(input_directory, input_filename)
-  CALL LOAD_JSON_DATA(input_directory, input_filename, input_json)
+  !--- Load Input JSON and Get Input/Output Path
+  CALL IO_GET_INPUT_DIRECTORY(input_directory, input_filename)
+  CALL IO_LOAD_JSON(input_directory, input_filename, input_json)
   CALL input_json%GET('post_processing.path', output_directory)
   
-  !--- Filenames
-  CALL input_json%GET('mesh.mesh', mesh_filename)
-  CALL input_json%GET('mesh.entity_sets', entity_filename)
-  CALL input_json%GET('particles(1).generator.location', particles_filename)
+  !--- Load Mesh
+  CALL mesh%LOAD_MESH(input_directory, input_json)
+  
+  !--- Load Material Points
+  CALL input_json%INFO('particles', found, dummy, index)
+  ALLOCATE(mbod(index))
+  IF ( found ) THEN
+    DO i=1, index
+      CALL mbod(i)%LOAD_PARTICLES(i, input_directory, input_json)
+    END DO
+  END IF
 
-  !--- Mesh and Material Points Setups
-  CALL MPMCORE_LOAD_MESH(input_directory, trim(mesh_filename), mesh)
-  CALL MPMCORE_LOAD_PARTICLES(input_directory, trim(particles_filename), mbod) 
-  CALL LOAD_JSON_DATA(input_directory, trim(entity_filename), entity_json)
-
-  !--- Analysis and Post-Processing Parameter
+  !--- Analysis and Post-Processing Parameters
   CALL input_json%GET('post_processing.output_steps', output_steps)
   CALL input_json%GET('analysis.nsteps', nsteps)
   CALL input_json%GET('analysis.dt', dt)
   CALL input_json%GET('analysis.max_iter', iteration_limit)
-
+  
   !***************************** MODEL INITIATION *****************************!
-
+  
   !--- Setup Global Boundary Conditions
-  CALL MPMCORE_FORM_GLOBAL_NF(input_json, entity_json, mesh)
-
-  !--- Insert Material Points
-  CALL MPMCORE_INSERT_MPS(mbod, mesh)
-  mbod%a_ele = 0 ! element id for each material point
-  mbod%c_ele = 0 ! total of MP inside each element
-  mbod%k_ele = 0 ! total of MP in the domain
-  mbod%d_ele = 0 ! activated element array (1 active/0 deactive)
-
+  CALL mesh%FORM_GLOBAL_NF(input_directory, input_json)
+  
+  !--- Insert Material Points to Background Mesh
+  CALL mbod(1)%SET_MESH(mesh)
   
   !************************* VARIABLES INITIALIZATION *************************!
+  !--- Load Material Constitutive Model Parameters
+  CALL mbod(1)%LOAD_MATERIAL(input_json)
+
+  !--- Calculate Initial Material Points State (Mass, Velocity, Stresses, Loads)
+  
   !--- Activate Initial Compulational Grid
-  !--- Get Initial Volume and Mass for Each Material Points
+  ! CALL MPMCORE_ACTIVATE_NODE()
   !--- Calculate Initial Conditions and Properties of Material Points
+  ! Compute Dee Matrix (Constitutive Model)
+  ! 
+
   !--- Print Initial Conditions Visualization (VTK)
 
-  CALL POINT_VIZ(                         &
-    input=0,                              &
-    coord=mbod%gm_coord,                  &
-    a_ins=mbod%a_ins,                     &
-    evpt=mbod%epsinvacum,                 &
-    m_stress=mbod%m_stress,               &
-    m_stress_inc=mbod%m_stress_change,    &
-    acc=mbod%m_acc,                       &
-    velocity=mbod%m_velocity,             &
-    cohesion=mbod%mpcp,                   &
-    devstress=mbod%devstress,             &
-    meanstress=mbod%mean_stress,          &
-    mpyield=mbod%mpyield,                 &
-    directory=output_directory            &
+  CALL IO_POINT_VIZ(                         &
+    input=0,                                 &
+    coord=mbod(1)%gm_coord,                  &
+    a_ins=mbod(1)%a_ins,                     &
+    evpt=mbod(1)%epsinvacum,                 &
+    m_stress=mbod(1)%m_stress,               &
+    m_stress_inc=mbod(1)%m_stress_change,    &
+    acc=mbod(1)%m_acc,                       &
+    velocity=mbod(1)%m_velocity,             &
+    cohesion=mbod(1)%mpcp,                   &
+    devstress=mbod(1)%devstress,             &
+    meanstress=mbod(1)%mean_stress,          &
+    mpyield=mbod(1)%mpyield,                 &
+    directory=output_directory               &
   )
   
-  CALL PARAVIEW(                          &
-    input=0,                              &
-    node_type=4,                          &
-    coord=mesh%n_coords,                  &
-    num=mesh%el_codes,                    &
-    directory=output_directory            &
+  CALL IO_PARAVIEW(                          &
+    input=0,                                 &
+    node_type=4,                             &
+    coord=mesh%g_coord,                      &
+    num=mesh%num,                            &
+    directory=output_directory               &
   )
     
   !****************************** TIME STEPPING *******************************!
@@ -102,11 +115,17 @@ PROGRAM Tied_Free_Field_MPM
   TIME_STEPS : DO step = 1, nsteps
     !**************************** Pre-Calculations ****************************!
     PRINT '(A, I8, A, I8)', "MPM Calculation Step :", step, "/", nsteps
+
     !--- Body Solution
+    ! Reset Variables
+    converged = .TRUE.
+    CALL mbod(1)%RESET_MP()
+    ! Compute Mesh Momentum and Mass (GIMP / CMPM)
+    
+
     !--- Stiffness
     !--- Combined Stiffness
-    mbod%gm_coord(1, :) = mbod%gm_coord(1, :) + 0.000001_iwp
-    mbod%gm_coord(2, :) = mbod%gm_coord(2, :) + 0.000005_iwp
+
     !************************ Plastic Strain Iteration ************************!
     iteration = 0
     PLASTIC_ITERATION : DO WHILE (iteration < iteration_limit)
@@ -119,29 +138,29 @@ PROGRAM Tied_Free_Field_MPM
     !--- Reverse Mapping (Node -> MP)
     !--- Save Material Point Data (VTK)
     print_steps = print_steps + 1 
-    IF (print_steps == output_steps) THEN
-      CALL POINT_VIZ(                         &
-        input=step,                           &
-        coord=mbod%gm_coord,                  &
-        a_ins=mbod%a_ins,                     &
-        evpt=mbod%epsinvacum,                 &
-        m_stress=mbod%m_stress,               &
-        m_stress_inc=mbod%m_stress_change,    &
-        acc=mbod%m_acc,                       &
-        velocity=mbod%m_velocity,             &
-        cohesion=mbod%mpcp,                   &
-        devstress=mbod%devstress,             &
-        meanstress=mbod%mean_stress,          &
-        mpyield=mbod%mpyield,                 &
-        directory=output_directory            &
+    IF (print_steps == output_steps .and. .false.) THEN
+      CALL IO_POINT_VIZ(                         &
+        input=step,                              &
+        coord=mbod(1)%gm_coord,                  &
+        a_ins=mbod(1)%a_ins,                     &
+        evpt=mbod(1)%epsinvacum,                 &
+        m_stress=mbod(1)%m_stress,               &
+        m_stress_inc=mbod(1)%m_stress_change,    &
+        acc=mbod(1)%m_acc,                       &
+        velocity=mbod(1)%m_velocity,             &
+        cohesion=mbod(1)%mpcp,                   &
+        devstress=mbod(1)%devstress,             &
+        meanstress=mbod(1)%mean_stress,          &
+        mpyield=mbod(1)%mpyield,                 &
+        directory=output_directory               &
       )
       
-      CALL PARAVIEW(                          &
-        input=step,                           &
-        node_type=4,                          &
-        coord=mesh%n_coords,                  &
-        num=mesh%el_codes,                    &
-        directory=output_directory            &
+      CALL IO_PARAVIEW(                          &
+        input=step,                              &
+        node_type=4,                             &
+        coord=mesh%g_coord,                      &
+        num=mesh%num,                            &
+        directory=output_directory               &
       )
 
       print_steps = 0
