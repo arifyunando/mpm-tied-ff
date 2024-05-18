@@ -1566,7 +1566,7 @@ time_steps: DO w=1,10000000
                     converged=.true.
                     IF(converged) THEN
                         mbod(bod)%a_ele(i)=ielloc
-                            num=g_num(:,ielloc)
+                        num=g_num(:,ielloc)
                         coord=TRANSPOSE(g_coord(:,num))
                         sp_coord(:,1)=mbod(bod)%gm_coord(:,i)
                         lp_coord(1,:)=mbod(bod)%mpoints(i,:)
