@@ -1,6 +1,30 @@
 MODULE FUNCTIONS
   IMPLICIT NONE
-
+  ! Note: Naming Convention for dynamic 2D array saved in fixed array structure
+  !   variable_v = actual value of variable
+  !   variable_n = actual length of each index of the variable
+  !   variable_i = If variable_v is saved as 1D-Array, variable_i indicates
+  !                the index where each member array starts
+  !   Example:
+  !
+  !     [[a, b, c, d, e],
+  !      [f, g, h],
+  !      [i, j, k, l]]
+  !     
+  !      variable_v:
+  !        2D fixed array:
+  !          [[a, b, c, d, e]
+  !           [f, g, h, 0, 0]
+  !           [i, j, k, l, 0]]
+  !
+  !        1D fixed array:
+  !          [a, b, c, d, e, f, g, h, i, j, k, l, 0, 0, 0, 0, 0, 0]
+  !
+  !      variable_n:
+  !          [5, 3, 4]
+  !     
+  !      variable_i
+  !          [1, 6, 9]
   CONTAINS
   
 !************************* COMMON FEM & MPM FUNCTIONS *************************!
@@ -1575,7 +1599,7 @@ MODULE FUNCTIONS
     !   c_ele: List of number of MPs inside a given element
     !   k_ele: accumulation of c_ele
     !   etype: List of element indicators. 1: ele has no MP, 2: ele has MP 
-    !   a_ele: List of element number each MP resides 
+    !   a_ele: List of 
     !
     IMPLICIT NONE
     INTEGER,PARAMETER::iwp=SELECTED_REAL_KIND(15)
@@ -1607,8 +1631,8 @@ MODULE FUNCTIONS
 !******************************* GIMP FUNCTIONS *******************************!
 !                                                                              !
 
-  SUBROUTINE GIMP_GET_SUPPORT_ELEMENTS(member_elements,g_coord,gm_coord,c_ele,nf,    &
-    g_num,nels,lp_mp,tol,neighbour)
+  SUBROUTINE GIMP_GET_SUPPORT_ELEMENTS(member_elements,g_coord,gm_coord,       &
+    c_ele,nf,g_num,nels,lp,tol,neighbour)
     !
     ! This subroutine save all the elements inside 
     ! the support domain of each material point
@@ -1617,14 +1641,13 @@ MODULE FUNCTIONS
     INTEGER, PARAMETER    :: iwp=SELECTED_REAL_KIND(15)
     INTEGER, INTENT(IN)   :: nels
     INTEGER, INTENT(IN)   :: g_num(:,:), nf(:,:), c_ele(:)
-    REAL(iwp), INTENT(IN) :: g_coord(:,:), gm_coord(:,:), lp_mp(:,:)
+    REAL(iwp), INTENT(IN) :: g_coord(:,:), gm_coord(:,:), lp(:,:)
     INTEGER, INTENT(OUT)  :: member_elements(:,:) ! shape(n_max_element, nmps)
     ! Optional Arguments
     REAL(iwp), INTENT(IN), OPTIONAL :: tol
     INTEGER, INTENT(IN), OPTIONAL :: neighbour ! Number of external elements 
                                                ! affected by characteristic 
                                                ! functions
-                                               ! 1: No neighbor; 2: Immediate
     ! Local Parameters
     INTEGER   :: i,k,nmps,count
     REAL(iwp) :: lpx, lpy ! particle size in both directions 
@@ -1639,7 +1662,7 @@ MODULE FUNCTIONS
     member_elements=0 
 
     SELECT CASE(d_neighbour) 
-    CASE(1)
+    CASE(1) ! No neighbour
       ! Commented out until a locating algorithm without relying on 
       ! cell geometry is available. One options would be using LOCATE_MP_LOCAL 
       ! but this means high computational cost when doing the search (AS) 
@@ -1654,26 +1677,27 @@ MODULE FUNCTIONS
       !   END DO  
       ! END IF
 
-    CASE(2)
+    CASE(2) ! Immediate Cell Neighbour
       DO k=1,nmps
-        lpx=lp_mp(1,k)
-        lpy=lp_mp(2,k)
+        lpx=lp(1,k)
+        lpy=lp(2,k)
         count=1
         Ele:DO i=1,nels
           ! Check if the element is active (4 nodes of the element free at 
           ! least in one direction or with a material point inside)
-          ACTIVE_ELEMENT: IF(                                                   &
-             ((nf(1,g_num(1,i))>0.or.nf(2,g_num(1,i))>0).and.                   &
-              (nf(1,g_num(2,i))>0.or.nf(2,g_num(2,i))>0).and.                   &
-              (nf(1,g_num(3,i))>0.or.nf(2,g_num(3,i))>0).and.                   &
-              (nf(1,g_num(4,i))>0.or.nf(2,g_num(4,i))>0))                       &
-             .or. c_ele(i)>0 ) THEN                                          
+          ACTIVE_ELEMENT: IF(                                                  &
+             ((nf(1,g_num(1,i))>0.or.nf(2,g_num(1,i))>0).and.                  &
+              (nf(1,g_num(2,i))>0.or.nf(2,g_num(2,i))>0).and.                  &
+              (nf(1,g_num(3,i))>0.or.nf(2,g_num(3,i))>0).and.                  &
+              (nf(1,g_num(4,i))>0.or.nf(2,g_num(4,i))>0))                      &
+             .or. c_ele(i)>0 ) THEN
+
             ! Check whether the MP is inside the x support domain of one element
-            IF((gm_coord(1,k)<MAXVAL(g_coord(1,g_num(:,i)))+lpx+tol).and.       &
-               (gm_coord(1,k)>MINVAL(g_coord(1,g_num(:,i)))-lpx-tol)) THEN 
+            IF((gm_coord(1,k)<MAXVAL(g_coord(1,g_num(:,i)))+lpx+d_tol).and.      &
+               (gm_coord(1,k)>MINVAL(g_coord(1,g_num(:,i)))-lpx-d_tol)) THEN 
               ! Now check in y-dir support domain
-              IF((gm_coord(2,k)<MAXVAL(g_coord(1,g_num(:,i)))+lpy+tol).and.     &
-                 (gm_coord(2,k)>MINVAL(g_coord(1,g_num(:,i)))-lpy-tol))THEN
+              IF((gm_coord(2,k)<MAXVAL(g_coord(2,g_num(:,i)))+lpy+d_tol).and.    &
+                 (gm_coord(2,k)>MINVAL(g_coord(2,g_num(:,i)))-lpy-d_tol))THEN
                 ! Element in Support Domain! put its index on member_elements 
                 member_elements(k,count)=i
                 count=count+1
@@ -1691,35 +1715,219 @@ MODULE FUNCTIONS
   END SUBROUTINE GIMP_GET_SUPPORT_ELEMENTS
 
 
-  SUBROUTINE GIMP_SHAPE_FUN(s,iel,eldddylds,nf,GIMP_nodes,values,g_g,mvval)
+  SUBROUTINE GIMP_GET_PARTICLE_G(s,g_vector,nf,nodes_v,nodes_n)
     !
-    ! Subroutine to create the shape function vector to 
-    ! interpolate values from particles to nodes
+    ! Get the steering vector of the nodes within a material point
+    ! support domain
     !
     IMPLICIT NONE
     INTEGER,PARAMETER::iwp=SELECTED_REAL_KIND(15)
-    INTEGER,INTENT(IN)::iel,GIMP_nodes(:,:),g_g(:,:),nf(:,:),s,values,mvval
-    INTEGER,INTENT(OUT)::eldddylds(:)
+    INTEGER,INTENT(IN)::s, nf(:,:)
+    INTEGER,INTENT(IN)::nodes_v(:,:), nodes_n
+    INTEGER,INTENT(OUT)::g_vector(:)
     INTEGER::i,n
-    
-    eldddylds=0
+    g_vector=0
     n=1
-    !loads(b+1) is due because when sending the load vector to the subroutine, 
-    !there is no loads(0) value anymore, every value is now loads(0+1)
-    DO i=1,values
-        !eldddylds(n:n+1)=loads(b+1)
-        !IF(num(s)==8.or.num(s)==23.or.num(s)==38.or.num(s)==53.or.num(s)==68.or.num(s)==83.or.num(s)==98)THEN
-        !If((GIMP_nodes(i,s)==8.or.GIMP_nodes(i,s)==23.or.GIMP_nodes(i,s)==38.or.GIMP_nodes(i,s)==53.or. &
-        !GIMP_nodes(i,s)==68.or.GIMP_nodes(i,s)==83.or.GIMP_nodes(i,s)==98).and.mvval==2)THEN
-        !    eldddylds(n:n+1)=0
-        !ELSE   
-        eldddylds(n:n+1)=nf(:,GIMP_nodes(i,s))
-        !END IF    
+    DO i=1, nodes_n
+        g_vector(n:n+1)=nf(:,nodes_v(i,s))
         n=n+2
     END DO
-    
     RETURN 
-  END SUBROUTINE GIMP_SHAPE_FUN
+  END SUBROUTINE GIMP_GET_PARTICLE_G
+
+  
+  SUBROUTINE GIMP_GET_SHAPE_FUNCTION_AND_DERIVATIVES(func,deriv,s,iel,lm_coord, &
+    lp,cellsize,g_coord,gm_coord,support_nodes,a_ele,gimptol)
+    !     
+    ! Subroutine to compute implicit GIMP shape functions and its derivatives
+    ! for a given particle `s` w.r.t. a given element `iel`.
+    !
+    ! iGIMP_funder3 uses a constant gradient at the center of the nodes 
+    ! and it reduces as the support domain ends
+    !
+    ! TODO: Shape Function Derivatives is still not functional
+    !
+    IMPLICIT NONE
+    INTEGER,PARAMETER::iwp=SELECTED_REAL_KIND(15)
+    INTEGER,INTENT(IN)::s, iel
+    INTEGER,INTENT(IN)::support_nodes(:,:), a_ele(:)
+    REAL(iwp),INTENT(IN)::cellsize(:,:),lp(:,:)
+    REAL(iwp),INTENT(IN)::g_coord(:,:),gm_coord(:,:),lm_coord(:,:)
+    REAL(iwp),INTENT(IN),OPTIONAL::gimptol
+    REAL(iwp),INTENT(OUT)::func(:),deriv(:,:)
+    ! local variable
+    REAL(iwp)::node_coordx,node_coordy,mp_coordx,mp_coordy
+    REAL(iwp)::Sr,Sz,dSr,dSz,factx,facty
+    REAL(iwp)::offset
+    REAL(iwp)::lpx,lpy
+    INTEGER::i,j,k,m,n,nod,nodes
+    ! Constants
+    REAL(iwp)::one=1.0_iwp,two=2.0_iwp
+    REAL(iwp)::tol=1.0e-5
+    if(present(gimptol)) tol=gimptol
+    func=0.0; deriv=0.0 ! Initiate global shape function and its derivates
+    i=1; k=1; m=1
+
+    ! Get Material Point Coordinate
+    mp_coordx=gm_coord(1,s) !--x coordinate of current material point 's'
+    mp_coordy=gm_coord(2,s) !--y coordinate of material point 's'
+    
+    ! Determine Particle Size
+    nodes=UBOUND(deriv,2)
+    lpx=lp(1,s)*(two/cellsize(1,s))
+    lpy=lp(2,s)*(two/cellsize(2,s))
+
+    Fun_Deriv:DO n=1,nodes
+        Sr=0.0; Sz=0.0      ! Initiate local shape function
+        dSr=0.0; dSz=0.0    ! Initiate local shape function derivatives
+        nod=support_nodes(n,1) ! Get nodes within the MP support domain
+
+        ! Obtain nodal coordinates
+        node_coordx=g_coord(1,nod)
+        node_coordy=g_coord(2,nod)
+
+        !*** LOCAL COORDINATES ***!
+        ! Evaluate the local coordinate of the material point inside 
+        ! and outside the current evaluated affected element in x-dir
+        IF(a_ele(s)==iel)THEN 
+          ! Material point is inside the element
+          ! set factx from local mp coodinate relative to the element
+          factx = lm_coord(s,1) 
+        ELSE     
+          ! Material point is outside the element
+          IF(mp_coordx<node_coordx+tol)THEN          
+            ! point outside the element in the x direction (left side)
+            IF(n==1.or.n==2) offset=node_coordx-mp_coordx
+            IF(n==3.or.n==4) offset=(node_coordx-cellsize(1,s))-mp_coordx
+            ! local coordinate point at the left side of the element
+            ! calculated as the ratio of the distance between `the center of the
+            ! element to point` and `the center of the element to the element boundary`
+            factx = ((cellsize(1,s)/two+offset)/(cellsize(1,s)/two))*(-one)   
+          ELSE IF(mp_coordx>node_coordx-tol)THEN     
+            !-- point outside the element in the x direction (right side)
+            IF(n==1.or.n==2) offset=mp_coordx-(node_coordx+cellsize(1,s))
+            IF(n==3.or.n==4) offset=mp_coordx-(node_coordx)
+            ! local coordinate point at the right side of the element
+            factx = ((cellsize(1,s)/two+offset)/(cellsize(1,s)/two))       
+          ELSE
+            WRITE(*, *) "cannot locate particle. Abort program"
+            PAUSE
+            CALL EXIT(1)
+          END IF
+        END IF
+
+        !-- Evaluate local coordinate again in y-dir
+        IF(a_ele(s)==iel)THEN
+            facty=lm_coord(s,2)
+        ELSE 
+            IF(mp_coordy>=node_coordy)THEN        
+              ! point outside the element in the y direction (above the element)
+              IF(n==1.or.n==4)offset=((node_coordy+cellsize(2,s))-mp_coordy)*(-one)
+              IF(n==2.or.n==3)offset=(node_coordy-mp_coordy)*(-one)
+              facty=((cellsize(2,s)/two+offset)/(cellsize(2,s)/two))
+            ELSE IF(mp_coordy<=node_coordy)THEN     
+              ! point outside the element in the y direction (below the element)
+              IF(n==2.or.n==3)offset=(mp_coordy-(node_coordy-cellsize(2,s)))*(-one)
+              IF(n==1.or.n==4)offset=(mp_coordy-node_coordy)*(-one)
+              facty=((cellsize(2,s)/two+offset)/(cellsize(2,s)/two))*(-one)
+            END IF  
+        END IF
+
+        
+        !*** Shape functions ***!
+        IF(n==1)THEN        !Comparing with node 1
+          IF(factx<=-0.50_iwp)THEN
+              Sr=0.5_iwp*(factx+lpx)*(1.0_iwp-0.5_iwp*(factx+lpx))+0.75_iwp
+          ELSE IF(factx>=-0.50_iwp.and.factx<=0.5_iwp)THEN    
+              Sr=0.5_iwp*(factx+lpx)-0.25_iwp*(factx+lpx)**2-0.5_iwp*(factx-lpx)+0.25_iwp*(factx-lpx)**2
+          ELSE
+              Sr=0.25_iwp-0.5_iwp*(factx-lpx)+0.25_iwp*(factx-lpx)**2
+          END IF   
+
+          IF(facty<=-0.50_iwp)THEN
+              Sz=0.5_iwp*(facty+lpy)*(1.0_iwp-0.5_iwp*(facty+lpy))+0.75_iwp
+          ELSE IF(facty>=-0.50_iwp.and.facty<=0.5_iwp)THEN    
+              Sz=0.5_iwp*(facty+lpy)-0.25_iwp*(facty+lpy)**2-0.5_iwp*(facty-lpy)+0.25_iwp*(facty-lpy)**2
+          ELSE
+              Sz=0.25_iwp-0.5_iwp*(facty-lpy)+0.25_iwp*(facty-lpy)**2
+          END IF 
+
+        ELSE IF(n==2)THEN   !Comparing with node 2
+          IF(factx<=-0.50_iwp)THEN
+              Sr=0.5_iwp*(factx+lpx)*(1.0_iwp-0.5_iwp*(factx+lpx))+0.75_iwp
+          ELSE IF(factx>=-0.50_iwp.and.factx<=0.5_iwp)THEN    
+              Sr=0.5_iwp*(factx+lpx)-0.25_iwp*(factx+lpx)**2-0.5_iwp*(factx-lpx)+0.25_iwp*(factx-lpx)**2
+          ELSE
+              Sr=0.25_iwp-0.5_iwp*(factx-lpx)+0.25_iwp*(factx-lpx)**2
+          END IF 
+
+          IF(facty<=-0.50_iwp)THEN
+              Sz=0.5_iwp*(facty+lpy)*(1.0_iwp+0.5_iwp*(facty+lpy))+0.25_iwp
+          ELSE IF(facty>=-0.50_iwp.and.facty<=0.5_iwp)THEN    
+              Sz=0.5_iwp*(facty+lpy)+0.25_iwp*(facty+lpy)**2-0.5_iwp*(facty-lpy)-0.25_iwp*(facty-lpy)**2
+          ELSE
+              Sz=0.75_iwp-0.5_iwp*(facty-lpy)-0.25_iwp*(facty-lpy)**2
+          END IF       
+
+        ELSE IF(n==3)THEN   !Comparing with node 3
+          IF(factx<=-0.50_iwp)THEN
+              Sr=0.5_iwp*(factx+lpx)*(1.0_iwp+0.5_iwp*(factx+lpx))+0.25_iwp
+          ELSE IF(factx>=-0.50_iwp.and.factx<=0.5_iwp)THEN    
+              Sr=0.5_iwp*(factx+lpx)+0.25_iwp*(factx+lpx)**2-0.5_iwp*(factx-lpx)-0.25_iwp*(factx-lpx)**2
+          ELSE
+              Sr=0.75_iwp-0.5_iwp*(factx-lpx)-0.25_iwp*(factx-lpx)**2
+          END IF 
+
+          IF(facty<=-0.50_iwp)THEN
+              Sz=0.5_iwp*(facty+lpy)*(1.0_iwp+0.5_iwp*(facty+lpy))+0.25_iwp
+          ELSE IF(facty>=-0.50_iwp.and.facty<=0.5_iwp)THEN    
+              Sz=0.5_iwp*(facty+lpy)+0.25_iwp*(facty+lpy)**2-0.5_iwp*(facty-lpy)-0.25_iwp*(facty-lpy)**2
+          ELSE
+              Sz=0.75_iwp-0.5_iwp*(facty-lpy)-0.25_iwp*(facty-lpy)**2
+          END IF 
+
+        ELSE IF(n==4)THEN   !Comparing with node 4
+          IF(factx<=-0.50_iwp)THEN
+              Sr=0.5_iwp*(factx+lpx)*(1.0_iwp+0.5_iwp*(factx+lpx))+0.25_iwp
+          ELSE IF(factx>=-0.50_iwp.and.factx<=0.5_iwp)THEN    
+              Sr=0.5_iwp*(factx+lpx)+0.25_iwp*(factx+lpx)**2-0.5_iwp*(factx-lpx)-0.25_iwp*(factx-lpx)**2
+          ELSE
+              Sr=0.75_iwp-0.5_iwp*(factx-lpx)-0.25_iwp*(factx-lpx)**2
+          END IF 
+
+          IF(facty<=-0.50_iwp)THEN
+              Sz=0.5_iwp*(facty+lpy)*(1.0_iwp-0.5_iwp*(facty+lpy))+0.75_iwp
+          ELSE IF(facty>=-0.50_iwp.and.facty<=0.5_iwp)THEN    
+              Sz=0.5_iwp*(facty+lpy)-0.25_iwp*(facty+lpy)**2-0.5_iwp*(facty-lpy)+0.25_iwp*(facty-lpy)**2
+          ELSE
+              Sz=0.25_iwp-0.5_iwp*(facty-lpy)+0.25_iwp*(facty-lpy)**2
+          END IF 
+        END IF  
+
+        !*** Shape Function Derivatives ***!
+        ! ...
+        
+        ! Assign Calculated Shape Function and its Derivatives to Array
+        func(m)=Sr*Sz
+        ! IF(abs(func(m))>2)THEN
+        !     Sr=Sr
+        !     PAUSE
+        ! END IF    
+        ! IF((Sr<=0.0.or.Sz<=0.0))THEN
+        !     deriv(1,m)=0.0
+        !     deriv(2,m)=0.0
+        ! ELSE  
+        !     deriv(1,m)=dSr*Sz
+        !     deriv(2,m)=dSz*Sr
+        ! END IF
+
+        m=m+1
+
+    END DO Fun_Deriv
+
+    RETURN
+  END SUBROUTINE GIMP_GET_SHAPE_FUNCTION_AND_DERIVATIVES
+
 
 !                                                                              !
 !******************************* CMPM FUNCTIONS *******************************!
@@ -2126,255 +2334,6 @@ MODULE FUNCTIONS
 !****************************** UNSORTED & DRAFTS *****************************!
 !                                                                              !
 
-  SUBROUTINE iGIMP_funder3(s,mpoints,lp_mp,nip,coord,cellsize,gm_coord,         &
-    gimptol,GIMP_nodes,g_coord,a_ele,c_ele,iel,derGIMP,funGIMP)
-    !     
-    ! Subroutine to compute implicit GIMP shape functions and shape functions derivatives. 
-    ! iGIMP_funder3 uses a constant gradient at the center of the nodes and it reduces as the
-    ! support domain ends
-    !
-    IMPLICIT NONE
-    INTEGER,PARAMETER::iwp=SELECTED_REAL_KIND(15)
-    INTEGER,INTENT(IN)::s, nip, iel
-    INTEGER,INTENT(IN)::GIMP_nodes(:,:), a_ele(:), c_ele(:)
-    REAL(iwp),INTENT(IN)::cellsize,gimptol
-    REAL(iwp),INTENT(IN)::coord(:,:),gm_coord(:,:),mpoints(:,:),g_coord(:,:),lp_mp(:,:)
-    REAL(iwp),INTENT(OUT)::derGIMP(:,:),funGIMP(:)
-    REAL(iwp)::twolp,two=2.0_iwp,minx,miny,Sr,Sz,dSr,dSz,lp,factx,facty,maxx,maxy
-    REAL(iwp)::Dr,rdist,ni,xpoint,ypoint,xdist,ydist,elfact,tol
-    REAL(iwp)::four=4.0_iwp,three=3.0_iwp,twelve=12.0_iwp,six=6.0_iwp,one=1.0_iwp
-    REAL(iwp)::xi1,xi2,ni1,ni2,mp5=-0.5_iwp,coordx,coordy,lpx,lpy
-    INTEGER::i,j,k,m,n,nod,side,nodes
-
-    derGIMP=0.0
-    funGIMP=0.0
-    i=1
-    k=1
-    m=1
-    tol=gimptol
-    ! Get Material Point Coordinate
-    xpoint=gm_coord(1,s) !--x coordinate of current material point 's'
-    ypoint=gm_coord(2,s) !--y coordinate of material point 's'
-    
-    ! lp_mp is the initial particle size in x and y directions
-    nodes=UBOUND(derGIMP,2)
-    lpx=lp_mp(1,s)*(two/cellsize)
-    lpy=lp_mp(2,s)*(two/cellsize)
-
-    Fun_Deriv:DO n=1,nodes
-        Sr=0.0
-        Sz=0.0
-        dSr=0.0
-        dSz=0.0
-        nod=GIMP_nodes(n,1)
-        coordx=g_coord(1,nod)
-        coordy=g_coord(2,nod)
-
-        !*** LOCAL COORDINATES ***!
-        !--Evaluate the local coordinate of the material point inside 
-        !  and outside the current evaluated affected element in x-dir
-        IF(a_ele(s)==iel)THEN 
-          !--Material point is inside the element
-          !  set factx from local mp coodinate relative to the element
-          factx = mpoints(s,1) 
-        ELSE     
-          !-- Material point is outside the element
-          IF(xpoint<=coordx)THEN          
-            !-- point outside the element in the x direction (left side)
-            IF(n==1.or.n==2) xdist=coordx-xpoint
-            IF(n==3.or.n==4) xdist=(coordx-cellsize)-xpoint
-            ! local coordinate point at the left side of the element
-            ! calculated as the ratio of the distance between `the center of the
-            ! element to point` and `the center of the element to the element boundary`
-            factx = ((cellsize/two+xdist)/(cellsize/two))*(-one)   
-          ELSE IF(xpoint>=coordx)THEN     
-            !-- point outside the element in the x direction (right side)
-            IF(n==1.or.n==2) xdist=xpoint-(coordx+cellsize)
-            IF(n==3.or.n==4) xdist=xpoint-(coordx)
-            ! local coordinate point at the right side of the element
-            factx = ((cellsize/two+xdist)/(cellsize/two))       
-          END IF
-        END IF
-
-        !-- Evaluate local coordinate again in y-dir
-        IF(a_ele(s)==iel)THEN
-            facty=mpoints(s,2)
-        ELSE 
-            IF(ypoint>=coordy)THEN          !--point outside the element in the y direction (above the element)
-                IF(n==1.or.n==4)ydist=((coordy+cellsize)-ypoint)*(-one)
-                IF(n==2.or.n==3)ydist=((coordy)-ypoint)*(-one)
-                facty=((cellsize/two+ydist)/(cellsize/two))          !--local coordinate point over the element
-            ELSE IF(ypoint<=coordy)THEN     !--point outside the element in the y direction (below the element)
-                IF(n==2.or.n==3)ydist=(ypoint-(coordy-cellsize))*(-one)
-                IF(n==1.or.n==4)ydist=(ypoint-(coordy))*(-one)
-                facty=((cellsize/two+ydist)/(cellsize/two))*(-one)   !--local coordinate point below the element
-            END IF  
-        END IF
-
-        
-        !*** Shape functions ***!
-        IF(n==1)THEN        !Comparing with node 1
-          IF(factx<=-0.50_iwp)THEN
-              Sr=0.5_iwp*(factx+lpx)*(1.0_iwp-0.5_iwp*(factx+lpx))+0.75_iwp
-          ELSE IF(factx>=-0.50_iwp.and.factx<=0.5_iwp)THEN    
-              Sr=0.5_iwp*(factx+lpx)-0.25_iwp*(factx+lpx)**2-0.5_iwp*(factx-lpx)+0.25_iwp*(factx-lpx)**2
-          ELSE
-              Sr=0.25_iwp-0.5_iwp*(factx-lpx)+0.25_iwp*(factx-lpx)**2
-          END IF   
-
-          IF(facty<=-0.50_iwp)THEN
-              Sz=0.5_iwp*(facty+lpy)*(1.0_iwp-0.5_iwp*(facty+lpy))+0.75_iwp
-          ELSE IF(facty>=-0.50_iwp.and.facty<=0.5_iwp)THEN    
-              Sz=0.5_iwp*(facty+lpy)-0.25_iwp*(facty+lpy)**2-0.5_iwp*(facty-lpy)+0.25_iwp*(facty-lpy)**2
-          ELSE
-              Sz=0.25_iwp-0.5_iwp*(facty-lpy)+0.25_iwp*(facty-lpy)**2
-          END IF 
-
-        ELSE IF(n==2)THEN   !Comparing with node 2
-          IF(factx<=-0.50_iwp)THEN
-              Sr=0.5_iwp*(factx+lpx)*(1.0_iwp-0.5_iwp*(factx+lpx))+0.75_iwp
-          ELSE IF(factx>=-0.50_iwp.and.factx<=0.5_iwp)THEN    
-              Sr=0.5_iwp*(factx+lpx)-0.25_iwp*(factx+lpx)**2-0.5_iwp*(factx-lpx)+0.25_iwp*(factx-lpx)**2
-          ELSE
-              Sr=0.25_iwp-0.5_iwp*(factx-lpx)+0.25_iwp*(factx-lpx)**2
-          END IF 
-
-          IF(facty<=-0.50_iwp)THEN
-              Sz=0.5_iwp*(facty+lpy)*(1.0_iwp+0.5_iwp*(facty+lpy))+0.25_iwp
-          ELSE IF(facty>=-0.50_iwp.and.facty<=0.5_iwp)THEN    
-              Sz=0.5_iwp*(facty+lpy)+0.25_iwp*(facty+lpy)**2-0.5_iwp*(facty-lpy)-0.25_iwp*(facty-lpy)**2
-          ELSE
-              Sz=0.75_iwp-0.5_iwp*(facty-lpy)-0.25_iwp*(facty-lpy)**2
-          END IF       
-
-        ELSE IF(n==3)THEN   !Comparing with node 3
-          IF(factx<=-0.50_iwp)THEN
-              Sr=0.5_iwp*(factx+lpx)*(1.0_iwp+0.5_iwp*(factx+lpx))+0.25_iwp
-          ELSE IF(factx>=-0.50_iwp.and.factx<=0.5_iwp)THEN    
-              Sr=0.5_iwp*(factx+lpx)+0.25_iwp*(factx+lpx)**2-0.5_iwp*(factx-lpx)-0.25_iwp*(factx-lpx)**2
-          ELSE
-              Sr=0.75_iwp-0.5_iwp*(factx-lpx)-0.25_iwp*(factx-lpx)**2
-          END IF 
-
-          IF(facty<=-0.50_iwp)THEN
-              Sz=0.5_iwp*(facty+lpy)*(1.0_iwp+0.5_iwp*(facty+lpy))+0.25_iwp
-          ELSE IF(facty>=-0.50_iwp.and.facty<=0.5_iwp)THEN    
-              Sz=0.5_iwp*(facty+lpy)+0.25_iwp*(facty+lpy)**2-0.5_iwp*(facty-lpy)-0.25_iwp*(facty-lpy)**2
-          ELSE
-              Sz=0.75_iwp-0.5_iwp*(facty-lpy)-0.25_iwp*(facty-lpy)**2
-          END IF 
-
-        ELSE IF(n==4)THEN   !Comparing with node 4
-          IF(factx<=-0.50_iwp)THEN
-              Sr=0.5_iwp*(factx+lpx)*(1.0_iwp+0.5_iwp*(factx+lpx))+0.25_iwp
-          ELSE IF(factx>=-0.50_iwp.and.factx<=0.5_iwp)THEN    
-              Sr=0.5_iwp*(factx+lpx)+0.25_iwp*(factx+lpx)**2-0.5_iwp*(factx-lpx)-0.25_iwp*(factx-lpx)**2
-          ELSE
-              Sr=0.75_iwp-0.5_iwp*(factx-lpx)-0.25_iwp*(factx-lpx)**2
-          END IF 
-
-          IF(facty<=-0.50_iwp)THEN
-              Sz=0.5_iwp*(facty+lpy)*(1.0_iwp-0.5_iwp*(facty+lpy))+0.75_iwp
-          ELSE IF(facty>=-0.50_iwp.and.facty<=0.5_iwp)THEN    
-              Sz=0.5_iwp*(facty+lpy)-0.25_iwp*(facty+lpy)**2-0.5_iwp*(facty-lpy)+0.25_iwp*(facty-lpy)**2
-          ELSE
-              Sz=0.25_iwp-0.5_iwp*(facty-lpy)+0.25_iwp*(facty-lpy)**2
-          END IF 
-        END IF  
-
-        IF(n==1)THEN        !Comparing with node 1
-            dSr=(Xi1-Xi2)/(two*lp)
-            dSz=(ni1-ni2)/(two*lp)
-        ELSE IF(n==2)THEN   !Comparing with node 2
-            dSr=(Xi1-Xi2)/(two*lp)
-            dSz=(ni2-ni1)/(two*lp)
-        ELSE IF(n==3)THEN   !Comparing with node 3
-            dSr=(Xi2-Xi1)/(two*lp)
-            dSz=(ni2-ni1)/(two*lp)
-        ELSE IF(n==4)THEN   !Comparing with node 4
-            dSr=(Xi2-Xi1)/(two*lp)
-            dSz=(ni1-ni2)/(two*lp)
-        END IF  
-
-        ! Assign Calculated Shape Function and its Derivatives to Array
-        funGIMP(m)=Sr*Sz
-        IF(abs(funGIMP(m))>2)THEN
-            Sr=Sr
-            PAUSE
-        END IF    
-        IF((Sr<=0.0.or.Sz<=0.0))THEN
-            derGIMP(1,m)=0.0
-            derGIMP(2,m)=0.0
-        ELSE  
-            derGIMP(1,m)=dSr*Sz
-            derGIMP(2,m)=dSz*Sr
-        END IF
-
-        m=m+1
-
-    END DO Fun_Deriv
-
-    RETURN
-  END SUBROUTINE iGIMP_funder3
-
-
-  SUBROUTINE GIMP_SF_DERIVATIVES()
-    !
-    !
-    !
-    IMPLICIT NONE
-    ! For each node in the element:
-    !   For each MPs:
-    !     if MP is supporting particles:
-    !       Calculate Svp in x-dir
-    !       Calculate Svp in y-dir
-    !       Multipy Svp_x and Svp_y to get Svp
-    !       Calculate Nodal Weight by tally up Svp from all particles
-    !   Save the calculated Nodal Weight
-  END SUBROUTINE
-
-
-  SUBROUTINE GIMP_GET_SUPPORT_PARTICLES(particles,valuesg,g_num,g_coord,gm_coord,neighb,nny,a_ele,s,gimptol)
-    ! 
-    ! Subroutine to save all the MPs (indexes) inside the support domain of 
-    ! a given node index s (cf. equation 15 (Bardenhagen et. al., 2004))
-    !
-    IMPLICIT NONE
-    INTEGER,PARAMETER::iwp=SELECTED_REAL_KIND(15)
-    INTEGER,INTENT(IN)::s,nny ! s is node number
-    INTEGER,INTENT(IN)::g_num(:,:),a_ele(:),neighb(:,:),stencils(:,:)
-    REAL(iwp),INTENT(IN)::g_coord(:,:),gm_coord(:,:),lp_mp(:,:)
-    REAL(iwp),INTENT(IN),OPTIONAL::gimptol
-    INTEGER,INTENT(INOUT)::particles(:,:) ! shape(nmps, nnodes)
-    INTEGER,INTENT(INOUT)::valuesg(:) !
-    ! Local Variable
-    REAL(iwp)::minx,maxx,miny,maxy,cellsize,lpx,lpy,tol=1.0e-5
-    REAL(iwp),ALLOCATABLE::coords(:,:)
-    INTEGER::i,j,k,n,m,nn,nmps,nod,neig,iel,mainnod,nstencil,count,ndim=2
-    if(present(gimptol)) tol=gimptol
-    
-    nn=UBOUND(g_coord,2)
-    nmps=UBOUND(gm_coord,2)
-    
-    
-    !-Evaluation of particle bounding box / support domain for the GIMP
-    ! Tolerance is included to be sure the nodes are considered inside 
-    ! the support domain when they are just over the the edge of the boundary
-    minx=gm_coord(1,s)-(cellsize+lpx)-tol ! Left boundary
-    maxx=gm_coord(1,s)+(cellsize+lpy)+tol ! Right boundary
-    miny=gm_coord(2,s)+(cellsize+lpx)-tol ! Upper boundary
-    maxy=gm_coord(2,s)-(cellsize+lpy)+tol ! Lower boundary
-    
-    DO i=1,nmps
-      IF (gm_coord(1,i)>minx .and. gm_coord(1,i)<maxx) THEN ! check in x-dir
-        IF (gm_coord(2,i)>miny .and. gm_coord(2,i)<maxy) THEN
-          particles(i,s)=1
-        END IF
-      END IF
-    END DO
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
-    RETURN    
-END SUBROUTINE GIMP_GET_SUPPORT_PARTICLES
 
 !                                                                              !
 !******************************************************************************!

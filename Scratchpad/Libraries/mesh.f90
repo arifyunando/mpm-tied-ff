@@ -4,41 +4,44 @@ MODULE CLASS_MESH
   INTEGER, PARAMETER, PRIVATE::iwp=SELECTED_REAL_KIND(15)
 
   TYPE::mpm_grid
-    INTEGER :: id
+    INTEGER:: id
+    INTEGER:: mesh_ind  ! Indicates mesh type (+:rectilinear, -:isoparametric)
     ! Constants
-    INTEGER :: nn, nels, ndim
+    INTEGER:: ndim          ! number of problem dimension
+    INTEGER:: ndof, nodof   ! number of element degree of freedom, and node dof
+    INTEGER:: nn, nels, nod ! number of nodes, elements, and node/element
+    INTEGER:: nip           ! number of integration points
 
     ! Tracking variables
-    REAL(iwp), ALLOCATABLE :: g_coord(:,:)  ! Node Coordinates
-    INTEGER, ALLOCATABLE :: num(:,:)        ! Node Index that build an element
+    REAL(iwp),ALLOCATABLE:: g_coord(:,:) ! Node Global Coordinates
+    INTEGER,ALLOCATABLE:: num(:,:) ! Node index that build up an element
+    INTEGER,ALLOCATABLE:: g(:,:)   ! global steering vector of the mesh
+    INTEGER,ALLOCATABLE:: nf(:,:)  ! Track degree of freedoms
     
     ! Mesh Geometries
-    INTEGER, ALLOCATABLE :: cellsize(:,:) ! cellsize of each cell block
-    INTEGER, ALLOCATABLE :: neighb(:,:)   ! list of neighbouring cell indexes
+    REAL(iwp),ALLOCATABLE:: cellsize(:,:) ! cellsize of each cell block
+    INTEGER,ALLOCATABLE:: neighb(:,:)     ! list of neighbouring cell indexes
 
     ! Indexes
-    INTEGER, ALLOCATABLE :: nf(:,:)  ! Track degree of freedoms
-    INTEGER, ALLOCATABLE :: MPPE(:)  ! Material Point per Element
+    INTEGER,ALLOCATABLE:: MPPE(:)  ! Initial Material Point per Element
 
     ! Sparse Matrix variables
-    INTEGER, ALLOCATABLE :: kdiag(:) ! Indexes in the diagonal of skyline matrix
+    INTEGER,ALLOCATABLE:: kdiag(:) ! Indexes in the diagonal of skyline matrix
 
     ! Material Point Tracers
-    INTEGER, ALLOCATABLE :: c_ele(:) ! total of MP inside each element
-    INTEGER, ALLOCATABLE :: d_ele(:) ! activated element array (1:active; 0:deactive)
-    INTEGER, ALLOCATABLE :: dp_ele(:) 
-    INTEGER, ALLOCATABLE :: k_ele(:) ! total of MP in the domain
-    INTEGER, ALLOCATABLE :: etype(:)
+    INTEGER,ALLOCATABLE:: c_ele(:) ! number of MPs inside an element
+    INTEGER,ALLOCATABLE:: d_ele(:) ! activated element array (1:active; 0:deactive)
+    INTEGER,ALLOCATABLE:: k_ele(:) ! total of MP in the domain / Accum. of c_ele
     
     ! Nodal Properties (printable to VTK)
-    REAL(iwp), ALLOCATABLE :: eld(:) ! element nodal displacement 
-    REAL(iwp), ALLOCATABLE :: vel(:) ! element nodal velocity 
-    REAL(iwp), ALLOCATABLE :: acc(:) ! element nodal acceleration
-    REAL(iwp), ALLOCATABLE :: f_int(:) ! nodal internal force (ddylds)
-    REAL(iwp), ALLOCATABLE :: f_ext(:) ! nodal external force (gravlo)
-    REAL(iwp), ALLOCATABLE :: f_kin(:) ! nodal kinetic force (vcm)
-    REAL(iwp), ALLOCATABLE :: kv(:) ! Global 'effective' stiffness matrix
-    REAL(iwp), ALLOCATABLE :: mv(:) ! Global 'effective' mass matrix
+    REAL(iwp),ALLOCATABLE:: eld(:) ! element nodal displacement 
+    REAL(iwp),ALLOCATABLE:: vel(:) ! element nodal velocity 
+    REAL(iwp),ALLOCATABLE:: acc(:) ! element nodal acceleration
+    REAL(iwp),ALLOCATABLE:: f_int(:) ! nodal internal force (ddylds)
+    REAL(iwp),ALLOCATABLE:: f_ext(:) ! nodal external force (gravlo)
+    REAL(iwp),ALLOCATABLE:: f_kin(:) ! nodal kinetic force (vcm)
+    REAL(iwp),ALLOCATABLE:: kv(:) ! Global 'effective' stiffness matrix
+    REAL(iwp),ALLOCATABLE:: mv(:) ! Global 'effective' mass matrix
     CONTAINS
 
     PROCEDURE :: LOAD_MESH => CLASS_MESH_LOAD_MESH
@@ -51,6 +54,7 @@ MODULE CLASS_MESH
     !
     ! Constructor of The MPM_GRID Class Object
     !
+    USE FUNCTIONS
     USE JSON_MODULE
     USE IO
     IMPLICIT NONE
@@ -79,17 +83,25 @@ MODULE CLASS_MESH
     this%ndim = ubound(this%g_coord, 1)
     this%nn = ubound(this%g_coord, 2)
     this%nels = ubound(this%num, 2)
+    this%nod = ubound(this%num, 1)
+    this%nodof = def_nodof
+    this%ndof = this%nod * this%nodof
 
     ! Allocate Memory for variables with known shape
-    ALLOCATE(                                   &
-      this%nf(def_nodof, this%nn),              &
-      this%c_ele(this%nels),                    &
-      this%k_ele(0:this%nels),                  &
-      this%d_ele(this%nels),                    &
-      this%etype(this%nels),                    &
-      this%neighb(this%nels,8),                 &
-      this%dp_ele(this%nels)                    &
+    ALLOCATE(                       &
+      this%nf(def_nodof, this%nn),  &
+      this%g(this%ndof,this%nels),  &
+      this%c_ele(this%nels),        &
+      this%d_ele(this%nels),        &
+      this%k_ele(0:this%nels),      &
+      this%neighb(this%nels,8)      &
     )
+
+    ! Apply Global Boundary Condition
+    CALL CLASS_MESH_FORM_GLOBAL_NF(this, directory, input_json)
+
+    ! Create Global Steering Vector
+    CALL CLASS_MESH_FORM_STEERING_VECTOR(this)
 
     ! Determmine Cellsize
     CALL CLASS_MESH_CALCULATE_CELLSIZE(this, mesh_ind)
@@ -98,6 +110,7 @@ MODULE CLASS_MESH
 
   SUBROUTINE CLASS_MESH_FORM_GLOBAL_NF(this, directory, input_json)
     USE JSON_MODULE
+    USE FUNCTIONS
     USE IO
     IMPLICIT NONE
     CHARACTER(*), INTENT(IN)       :: directory
@@ -132,7 +145,23 @@ MODULE CLASS_MESH
       END IF
       i = i+1
     END DO
+    CALL FORMNF(this%nf)
   END SUBROUTINE CLASS_MESH_FORM_GLOBAL_NF
+
+  
+  SUBROUTINE CLASS_MESH_FORM_STEERING_VECTOR(this)
+    USE FUNCTIONS
+    IMPLICIT NONE
+    CLASS(mpm_grid), INTENT(INOUT) :: this
+    INTEGER,ALLOCATABLE::num(:),g(:)
+    INTEGER::iel
+    ALLOCATE(num(this%nod), g(this%nodof))
+    DO iel=1, this%nels
+      num = this%num(:,iel)
+      CALL NUM_TO_G(num, this%nf, g)
+      this%g(:,iel) = g
+    END DO
+  END SUBROUTINE CLASS_MESH_FORM_STEERING_VECTOR
 
 
   SUBROUTINE CLASS_MESH_CALCULATE_CELLSIZE(this, ind)
@@ -146,7 +175,7 @@ MODULE CLASS_MESH
     INTEGER, INTENT(IN) :: ind
     SELECT CASE(ind)
     CASE (1) ! Cartesian Grid / Constant Cellsize
-      ALLOCATE(this%cellsize(this%nels, 1))
+      ALLOCATE(this%cellsize(this%ndim, this%nels))
       this%cellsize = ABS(this%g_coord(1, 1) - this%g_coord(1, 2))
     CASE (2) ! Rectilinear Grid / Constant Cellsize in 1-dir
       ! get all the node coordinates of the stencils
@@ -170,27 +199,27 @@ MODULE CLASS_MESH
 
 
   ! TODOs
-  SUBROUTINE CLASS_MESH_LOOK_NEIGHBOUR(neighb)
-    IMPLICIT NONE
-    INTEGER,INTENT(OUT)::neighb(:,:) ! shape(max_neighbour, n_elements)
-  END SUBROUTINE CLASS_MESH_LOOK_NEIGHBOUR
+  ! SUBROUTINE CLASS_MESH_LOOK_NEIGHBOUR(neighb)
+  !   IMPLICIT NONE
+  !   INTEGER,INTENT(OUT)::neighb(:,:) ! shape(max_neighbour, n_elements)
+  ! END SUBROUTINE CLASS_MESH_LOOK_NEIGHBOUR
 
 
-  SUBROUTINE CLASS_MESH_CONSTRUCT_STENCILS(this)
-    IMPLICIT NONE
-    CLASS(mpm_grid), INTENT(INOUT) :: this
-  END SUBROUTINE CLASS_MESH_CONSTRUCT_STENCILS
+  ! SUBROUTINE CLASS_MESH_CONSTRUCT_STENCILS(this)
+  !   IMPLICIT NONE
+  !   CLASS(mpm_grid), INTENT(INOUT) :: this
+  ! END SUBROUTINE CLASS_MESH_CONSTRUCT_STENCILS
 
 
-  SUBROUTINE CLASS_MESH_CALCULATE_PARTICLE_SUPPORT_LENGTH(this)
-    !
-    ! Calculate lp based on the cellsize and the number of particles
-    ! in direction
-    !
-    IMPLICIT NONE
-    CLASS(mpm_grid), INTENT(INOUT) :: this
+  ! SUBROUTINE CLASS_MESH_CALCULATE_PARTICLE_SUPPORT_LENGTH(this)
+  !   !
+  !   ! Calculate lp based on the cellsize and the number of particles
+  !   ! in direction
+  !   !
+  !   IMPLICIT NONE
+  !   CLASS(mpm_grid), INTENT(INOUT) :: this
   
-  END SUBROUTINE CLASS_MESH_CALCULATE_PARTICLE_SUPPORT_LENGTH
+  ! END SUBROUTINE CLASS_MESH_CALCULATE_PARTICLE_SUPPORT_LENGTH
 
 
 

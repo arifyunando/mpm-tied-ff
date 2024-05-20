@@ -6,46 +6,129 @@ MODULE CLASS_PARTICLE
   TYPE::mpm_particles
     INTEGER :: id
     CHARACTER(16):: name
-    INTEGER   :: A,Bi,emps,newnodes,nyp,newel,nmps,nn,slopeopt,                 &
-                 slopeel,slope1,tep
-              
-    REAL(iwp) :: w1,s1,h1
-    INTEGER   :: nex,ney,nels,locx,locy,ale,neq,np_types,nprops,dist_x,dist_y,  &
-                 nx1,nx2,ny1,ny2
+    
+    ! Constants
+    INTEGER:: nmps ! number of material points
 
-    INTEGER,ALLOCATABLE:: b(:),etype(:),g(:),g_g(:,:),g_num(:,:),nf(:,:),       &
-      num(:),MPPE(:),neighb(:,:),nodecont(:),newels(:),valuesg(:),boundnod(:),  &
-      kdiag(:),kconst(:),nodecont_f(:),tied_nn(:,:),base_nn(:)
+    ! Commons Variable
+    REAL(iwp),ALLOCATABLE:: gm_coord(:,:) ! MP global coordinates
+    INTEGER,ALLOCATABLE:: b(:) 
+    INTEGER,ALLOCATABLE:: nf(:,:)
+    INTEGER,ALLOCATABLE:: MPPE(:)
+    INTEGER,ALLOCATABLE:: neighb(:,:)
+    INTEGER,ALLOCATABLE:: nodecont(:)
+    INTEGER,ALLOCATABLE:: newels(:)
+    INTEGER,ALLOCATABLE:: valuesg(:)
+    INTEGER,ALLOCATABLE:: boundnod(:)
+    INTEGER,ALLOCATABLE:: kdiag(:)
+    INTEGER,ALLOCATABLE:: kconst(:)
+    INTEGER,ALLOCATABLE:: nodecont_f(:)
+    INTEGER,ALLOCATABLE:: tied_nn(:,:)
+    INTEGER,ALLOCATABLE:: base_nn(:)
     
     ! Variables to track material points
-    INTEGER,ALLOCATABLE:: a_ele(:),c_ele(:),d_ele(:),b_ele(:),dp_ele(:),        &
-      flag(:),GIMP_nodes(:,:),GIMP_node_mp(:,:),k_ele(:),member_elements(:,:)
+    INTEGER,ALLOCATABLE:: a_ele(:) ! Element index each MP resides 
+    INTEGER,ALLOCATABLE:: c_ele(:) ! Number of MPs inside a given element
+    INTEGER,ALLOCATABLE:: d_ele(:) ! Active element (1:active; 0:deactive)
+    INTEGER,ALLOCATABLE:: k_ele(:) ! Accumulation of c_ele
+    INTEGER,ALLOCATABLE:: support_nodes(:,:) ! List of Node ids inside mp support domain
+    INTEGER,ALLOCATABLE:: member_elements(:,:) ! list of Elements ids inside mp support domain
+    INTEGER:: n_active_ele
     
-    ! Material properties
-    REAL(iwp),ALLOCATABLE:: dee(:,:),deeinv(:,:),epsinvacum(:),g_matrix(:),     &
-      mpcp(:),prop(:,:)
-    
-    ! Variables for each material point
-    REAL(iwp),ALLOCATABLE:: accp(:,:),a_ins(:,:),Devstress(:),eps_acum(:,:),    &
-      gm_coord(:,:),g_coord(:,:),ini_density(:),ini_volume(:),ins(:,:),         &
-      mweights(:),m_volume(:),m_coord(:,:),m_stress(:,:), m_velocity(:,:),      &
-      m_acc(:,:),mpoints(:,:),m_mass(:),m_stress_ini(:,:),accb(:,:),            &  
-      m_stress_change(:,:),vccp(:,:),mpyield(:),mean_stress(:),lp_mp(:,:),      &
-      m_stress_prev(:,:),ground_acc(:),mp_dens(:) 
+    ! Active Elements Variable
+    REAL(iwp),ALLOCATABLE:: g_coord(:,:) ! Mesh node global coordinates
+    INTEGER,ALLOCATABLE:: g_num(:,:) ! global element node ids 
+    INTEGER,ALLOCATABLE:: num(:)     ! Mesh node indexes
+    INTEGER,ALLOCATABLE:: g_g(:,:)   ! global steering factor
+    INTEGER,ALLOCATABLE:: g(:)       ! local steering factor
+
+    ! Variables to track active MPM elements
+  
+    ! Numerical Integration
+    REAL(iwp),ALLOCATABLE:: mweights(:)   ! Initial Particle Weights (Initial Particle Volume)
+    REAL(iwp),ALLOCATABLE:: lm_coord(:,:) ! Local Particle Coordinates
+    REAL(iwp),ALLOCATABLE:: lp(:,:)       ! Local Particle Size (GIMP)
+
+    ! Particle Properties (Print to VTK)
+    REAL(iwp),ALLOCATABLE:: a_ins(:,:)    ! Particle Displacement
+    REAL(iwp),ALLOCATABLE:: epsinvacum(:) ! Particle Plastic Strain (?)
+    REAL(iwp),ALLOCATABLE:: m_mass(:)     ! Particle Mass
+    REAL(iwp),ALLOCATABLE:: m_acc(:,:)    ! Particle Acceleration
+    REAL(iwp),ALLOCATABLE:: m_velocity(:,:) ! Particle Velocity
+
+    REAL(iwp),ALLOCATABLE:: m_stress_ini(:,:) ! Initial Particle Stress
+    REAL(iwp),ALLOCATABLE:: m_stress(:,:)     ! Current Particle Stress
+    REAL(iwp),ALLOCATABLE:: m_stress_change(:,:) ! Stress Increment
+    REAL(iwp),ALLOCATABLE:: mean_stress(:)    ! Mean Stress (p-q diagram)
+    REAL(iwp),ALLOCATABLE:: Devstress(:)      ! Deviatoric Stress (p-q diagram)
+    REAL(iwp),ALLOCATABLE:: mpyield(:)        ! Yield Criterion Function Value
+
+    ! Particle Material Properties
+    REAL(iwp),ALLOCATABLE:: mp_dens(:) ! Particle densitiy
+    REAL(iwp),ALLOCATABLE:: mpcp(:)    ! Particle cohesion
+
+    ! Kinetics and Kinematics
+    REAL(iwp),ALLOCATABLE:: dee(:,:)    ! Elastic Stiffness Matrix
+
+    REAL(iwp),ALLOCATABLE:: g_matrix(:) ! Gravitational loading
+
+    REAL(iwp),ALLOCATABLE:: eps_acum(:,:)   ! Accumulative particle strain
+    REAL(iwp),ALLOCATABLE:: ini_density(:)  ! Initial density
+    REAL(iwp),ALLOCATABLE:: ini_volume(:)   ! Initial particle volume
+    REAL(iwp),ALLOCATABLE:: m_volume(:)     ! Current particle volume
+    REAL(iwp),ALLOCATABLE:: ground_acc(:)   ! Ground Acceleration
+    REAL(iwp),ALLOCATABLE:: ins(:,:)        ! 
     
     ! Single body field
-    REAL(iwp),ALLOCATABLE:: a_field(:,:),ddylds(:),diag(:),d1x1(:),d2x1(:),     &
-      eps_m(:,:),eps_1(:,:),eps_2(:,:),fnorm(:),fcont(:),fdamp(:),Freact(:),    &
-      f_fint(:),gravlo(:),kv(:),kp(:),kp_2(:),kinup_d2x1(:),kinup_d1x1(:),      &
-      loads(:),mv(:),m_mvp(:),m_mva(:),m_field(:),m_phi(:),                     &
-      normal(:,:),temp_d1x1(:),temp_d2x1(:),tangent(:,:),                       &
-      v_field(:,:),vcm(:),vel_change(:),x1(:),                                  &
-      x1_orig(:),x1_change(:),x1_ini(:),f_earth(:),kinup_Ground_d2x1(:),        &
-      cdamp(:),mvkv(:)
+    REAL(iwp),ALLOCATABLE:: accp(:,:)
+    REAL(iwp),ALLOCATABLE:: accb(:,:)
+    REAL(iwp),ALLOCATABLE:: vccp(:,:)
+    REAL(iwp),ALLOCATABLE:: a_field(:,:)
+
+    ! Body force
+    REAL(iwp),ALLOCATABLE:: ddylds(:)
+    REAL(iwp),ALLOCATABLE:: diag(:)
+    REAL(iwp),ALLOCATABLE:: d1x1(:)
+    REAL(iwp),ALLOCATABLE:: d2x1(:)
+    REAL(iwp),ALLOCATABLE:: eps_m(:,:)
+    REAL(iwp),ALLOCATABLE:: eps_1(:,:)
+    REAL(iwp),ALLOCATABLE:: eps_2(:,:)
+    REAL(iwp),ALLOCATABLE:: fnorm(:)
+    REAL(iwp),ALLOCATABLE:: fcont(:)
+    REAL(iwp),ALLOCATABLE:: fdamp(:)
+    REAL(iwp),ALLOCATABLE:: Freact(:)
+    REAL(iwp),ALLOCATABLE:: f_fint(:)
+    REAL(iwp),ALLOCATABLE:: gravlo(:)
+    REAL(iwp),ALLOCATABLE:: kv(:)
+    REAL(iwp),ALLOCATABLE:: kp(:)
+    REAL(iwp),ALLOCATABLE:: kp_2(:)
+    REAL(iwp),ALLOCATABLE:: kinup_d2x1(:)
+    REAL(iwp),ALLOCATABLE:: kinup_d1x1(:)
+    REAL(iwp),ALLOCATABLE:: loads(:)
+    REAL(iwp),ALLOCATABLE:: mv(:)
+    REAL(iwp),ALLOCATABLE:: mvkv(:)
+    REAL(iwp),ALLOCATABLE:: m_mvp(:)
+    REAL(iwp),ALLOCATABLE:: m_mva(:)
+    REAL(iwp),ALLOCATABLE:: m_field(:)
+    REAL(iwp),ALLOCATABLE:: m_phi(:)
+    REAL(iwp),ALLOCATABLE:: normal(:,:)
+    REAL(iwp),ALLOCATABLE:: temp_d1x1(:)
+    REAL(iwp),ALLOCATABLE:: temp_d2x1(:)
+    REAL(iwp),ALLOCATABLE:: tangent(:,:)
+    REAL(iwp),ALLOCATABLE:: v_field(:,:)
+    REAL(iwp),ALLOCATABLE:: vcm(:)
+    REAL(iwp),ALLOCATABLE:: vel_change(:)
+    REAL(iwp),ALLOCATABLE:: x1(:)
+    REAL(iwp),ALLOCATABLE:: x1_orig(:)
+    REAL(iwp),ALLOCATABLE:: x1_change(:)
+    REAL(iwp),ALLOCATABLE:: x1_ini(:)
+    REAL(iwp),ALLOCATABLE:: f_earth(:)
+    REAL(iwp),ALLOCATABLE:: kinup_Ground_d2x1(:)
+    REAL(iwp),ALLOCATABLE:: cdamp(:)
 
     ! Contact-specific variables
-    REAL(iwp) :: phi, gimptol
     LOGICAL   :: activate=.false.
+    REAL(iwp) :: phi, gimptol
 
     CONTAINS
 
@@ -96,9 +179,8 @@ MODULE CLASS_PARTICLE
       this%m_stress(def_nst, this%nmps),        &
       this%m_velocity(def_nodof, this%nmps),    &
       this%a_ins(def_ndim, this%nmps),          &
-      this%flag(this%nmps),                     &
       this%b(this%nmps),                        &
-      this%mpoints(this%nmps, def_ndim),        &
+      this%lm_coord(def_ndim, this%nmps),       &
       this%a_ele(this%nmps),                    &
       this%accp(def_ndim, this%nmps),           &
       this%vccp(def_ndim, this%nmps),           &
@@ -107,20 +189,19 @@ MODULE CLASS_PARTICLE
       this%Devstress(this%nmps),                &
       this%ins(def_ndim, this%nmps),            &
       this%eps_acum(def_nst, this%nmps),        &
-      this%GIMP_nodes(9, this%nmps),            &
+      this%support_nodes(9, this%nmps),         &
       this%valuesg(this%nmps),                  &
       this%m_stress_ini(def_nst, this%nmps),    &
       this%m_stress_change(def_nst, this%nmps), &
       this%m_acc(def_nodof, this%nmps),         &
       this%mpyield(this%nmps),                  &
       this%mean_stress(this%nmps),              &
-      this%lp_mp(def_ndim, this%nmps),          &
-      this%elemmpoints(this%nmps, 4),           &
+      this%lp(def_ndim, this%nmps),             &
+      this%member_elements(this%nmps, 4),       &
       this%accb(def_ndim, this%nmps),           &
       this%eps_m(def_nst, this%nmps),           &
       this%eps_1(def_nst, this%nmps),           &
       this%eps_2(def_nst, this%nmps),           &
-      this%m_stress_prev(def_nst, this%nmps),   &
       this%mp_dens(this%nmps),                  &
       this%mpcp(this%nmps)                      &
     )
@@ -137,7 +218,6 @@ MODULE CLASS_PARTICLE
       this%d2x1            = zero
       this%accb            = zero
       this%vccp            = zero
-      this%flag            = 0
       this%epsinvacum      = zero
       this%Devstress       = zero
       this%ins             = zero
@@ -151,7 +231,6 @@ MODULE CLASS_PARTICLE
       this%kv              = zero
       this%mv              = zero
       this%x1_orig         = zero
-      this%m_stress_prev   = zero
       this%nodecont_f      = zero
       this%kinup_d1x1      = zero
       this%kinup_d2x1      = zero
@@ -177,7 +256,7 @@ MODULE CLASS_PARTICLE
     this%temp_d1x1  = zero
     this%temp_d2x1  = zero
     this%valuesg    = zero
-    this%GIMP_nodes = zero
+    this%support_nodes = zero
     this%nodecont   = zero
     this%nodecont_f = zero
     this%normal     = zero

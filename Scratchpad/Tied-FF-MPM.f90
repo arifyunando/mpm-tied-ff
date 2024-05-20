@@ -30,6 +30,7 @@ PROGRAM Tied_Free_Field_MPM
   CHARACTER(1) :: i_char
 
   !**************************** CONSTANT PARAMETER ****************************!
+  !                                                                            !
   INTEGER :: nst=4    ! Number of Stress/Strain Terms 
                       ! (3: Plane Stress/Strain, 4: Axisymmetric, 6: 3-D)
                       ! With appropriate Linear Derivative Operator (Bee),
@@ -39,17 +40,24 @@ PROGRAM Tied_Free_Field_MPM
   INTEGER :: nip=4    ! Number of Gaussian Integration Point for Double Mapping
 
   !**************************** PREPARATION PHASE *****************************!
+  !                                                                            !
+  
   !--- Initiate Program Settings  
-
-  !--- Load Input JSON and Get Input/Output Path
+  ! Load Input JSON and Get Input/Output Path
   CALL IO_GET_INPUT_DIRECTORY(input_directory, input_filename)
   CALL IO_LOAD_JSON(input_directory, input_filename, input_json)
   CALL input_json%GET('post_processing.path', output_directory)
-  
-  !--- Load Mesh
-  CALL mesh%LOAD_MESH(input_directory, input_json)
-  
-  !--- Load Material Points
+ 
+  ! Analysis and Post-Processing Parameters
+  CALL input_json%GET('post_processing.output_steps', output_steps)
+  CALL input_json%GET('analysis.nsteps', nsteps)
+  CALL input_json%GET('analysis.dt', dt)
+  CALL input_json%GET('analysis.max_iter', iteration_limit)
+
+  !***************************** MODEL INITIATION *****************************!
+  !                                                                            !
+
+  !--- Load Material Points / Particle Bodies
   CALL input_json%INFO('particles', found, dummy, index)
   ALLOCATE(mbod(index))
   IF ( found ) THEN
@@ -58,33 +66,29 @@ PROGRAM Tied_Free_Field_MPM
     END DO
   END IF
 
-  !--- Analysis and Post-Processing Parameters
-  CALL input_json%GET('post_processing.output_steps', output_steps)
-  CALL input_json%GET('analysis.nsteps', nsteps)
-  CALL input_json%GET('analysis.dt', dt)
-  CALL input_json%GET('analysis.max_iter', iteration_limit)
-  
-  !***************************** MODEL INITIATION *****************************!
-  
-  !--- Setup Global Boundary Conditions
-  CALL mesh%FORM_GLOBAL_NF(input_directory, input_json)
+  !--- Initiate Mesh
+  CALL mesh%LOAD_MESH(input_directory, input_json)
+  mesh%mesh_ind=4
   
   !--- Insert Material Points to Background Mesh
   CALL mbod(1)%SET_MESH(mesh)
   
-  !************************* VARIABLES INITIALIZATION *************************!
   !--- Load Material Constitutive Model Parameters
-  CALL mbod(1)%LOAD_MATERIAL(input_json)
+  CALL mbod(1)%SET_MATERIAL(input_json)
+
+
+  !**************************** INITIAL CONDITIONS ****************************!
+  !                                                                            !
+  
+  !--- Activate/Flag Initial Compulational Grid
+  CALL mbod(1)%FLAG_ELEMENTS
+  CALL mbod(1)%ACTIVATE_ELEMENTS
 
   !--- Calculate Initial Material Points State (Mass, Velocity, Stresses, Loads)
   
-  !--- Activate Initial Compulational Grid
-  ! CALL MPMCORE_ACTIVATE_NODE()
-
   !--- Calculate Initial Conditions and Properties of Material Points
   ! Compute Dee Matrix (Constitutive Model)
-  ! 
-
+  
   !--- Print Initial Conditions Visualization (VTK)
 
   CALL IO_POINT_VIZ(                         &
@@ -112,9 +116,12 @@ PROGRAM Tied_Free_Field_MPM
   )
     
   !****************************** TIME STEPPING *******************************!
+  !                                                                            !
+
   !--- Initiate Time Stepping Variables
   print_steps = 0
   TIME_STEPS : DO step = 1, nsteps
+
     !**************************** Pre-Calculations ****************************!
     PRINT '(A, I8, A, I8)', "MPM Calculation Step :", step, "/", nsteps
 
@@ -122,11 +129,11 @@ PROGRAM Tied_Free_Field_MPM
     ! Reset Variables
     converged = .TRUE.
     CALL mbod(1)%RESET_MP()
-    ! Compute Mesh Momentum and Mass (GIMP / CMPM)
     
-
     !--- Compute Domain Stiffness Matrix
-    
+    CALL mbod(1)%CONSTRUCT_DMMPM_STIFFNESS(nip, nst)
+
+    ! Compute Mesh Momentum and Mass (GIMP / CMPM)
 
     !--- Compute Domain Mass Matrix
 
