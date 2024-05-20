@@ -377,7 +377,7 @@ SUBROUTINE Elem_suport(c_ele,nf,g_num,cellsize,nx1,nip,nels,g_coord,gm_coord,lp_
     INTEGER,INTENT(OUT)::elemmpoints(:,:)
     INTEGER::l,m,n,i,nod,k,nmps,cont,colx,rowy,ielloc
     REAL(iwp)::x,y,two=2.0_iwp,twolp,lp,tol,neigbour,lpx,lpy
-
+    LOGICAL::conditions, condx, condy
     elemmpoints=0
     nmps=UBOUND(gm_coord,2)
      
@@ -397,26 +397,30 @@ SUBROUTINE Elem_suport(c_ele,nf,g_num,cellsize,nx1,nip,nels,g_coord,gm_coord,lp_
             lpx=lp_mp(1,k);lpy=lp_mp(2,k)
             cont=1
             Ele:DO i=1,nels
+                conditions=.false.; condx=.false.; condy=.false.
                 ! Check if the element is active (4 nodes of the element free at 
                 ! least in one direction or with a material point inside)
-                ActiveEl:IF(                                                    &
-                    (                                                           &
+                conditions =  (                                                 &
                         (nf(1,g_num(1,i))>0.or.nf(2,g_num(1,i))>0).and.         &
                         (nf(1,g_num(2,i))>0.or.nf(2,g_num(2,i))>0).and.         &
                         (nf(1,g_num(3,i))>0.or.nf(2,g_num(3,i))>0).and.         &
                         (nf(1,g_num(4,i))>0.or.nf(2,g_num(4,i))>0)              &
-                    ) .or. c_ele(i)>0                                           &
-                ) THEN 
+                    ) .or. c_ele(i)>0
+                ActiveEl:IF(conditions) THEN 
                     m=g_num(3,i)
                     n=g_num(2,i)
                     
                     !Chek if the material point is inside the x suport doman of one element
-                    IF((gm_coord(1,k)<=g_coord(1,m)+lpx-tol).and.(gm_coord(1,k)>=g_coord(1,n)-lpx+tol))THEN 
+                    condx = (gm_coord(1,k)<=g_coord(1,m)+lpx-tol).and.(gm_coord(1,k)>=g_coord(1,n)-lpx+tol)
+                    IF(condx)THEN 
                         m=g_num(2,i);n=g_num(1,i)
-                        IF((gm_coord(2,k)<=g_coord(2,m)+lpy-tol).and.(gm_coord(2,k)>=g_coord(2,n)-lpy+tol))THEN !If is inside the x support domain, then chek if the material point is inside the y suport doman of one element
+                        condy = (gm_coord(2,k)<=g_coord(2,m)+lpy-tol).and.(gm_coord(2,k)>=g_coord(2,n)-lpy+tol)
+                        IF(condy)THEN !If is inside the x support domain, then chek if the material point is inside the y suport doman of one element
                             elemmpoints(k,cont)=i
                             cont=cont+1
-                            IF(cont==5) GOTO 20
+                            IF(cont==5) THEN
+                                GOTO 20 ! exit element loop
+                            END IF
                         END IF
                     END IF
                 END IF ActiveEl

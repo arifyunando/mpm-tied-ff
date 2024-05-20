@@ -65,79 +65,133 @@ MODULE MPM_CORE
     END IF
   END SUBROUTINE MPMCORE_LOAD_MATERIAL
 
-  ! TODO
+  ! TODOs
+  SUBROUTINE MPMCORE_CONSTRUCT_DMMPM_STIFFNESS(this)
+    !
+    !
+    !
+    IMPLICIT NONE
+    CLASS(mpm_body), INTENT(INOUT) :: this
+    ! Local Variable
+    INTEGER :: i,j,k,iel
+
+    ! For each material points:
+    !   For each element in mp's member_element:
+    !     Determine Double Mapping Weight
+    !     Calculate GIMP Shape Function
+    !     For each Gaussian Integration Point:
+    !       Determine FEM SF and FEM SFD
+    !       Calculate Dee Matrix Scaling Factor
+    !       Construct Local Stiffness Matrix KM by Summing over Gauss IPs
+    !     Add local matrix to global stiffness matrix (fsparv)
+
+    ! Note: Another Apporach (Might be worth it to compare)
+    ! Determine the Double Mapping Weight
+    ! For each ele_nodes, calculate GIMP Shape Function over supporting particles
+    ! Get gaussian integration point locations n weights
+    ! For each Gaussian ip:
+    !   Get the FEM SF from all the element nodes evaluated at the ip
+    !   Calculate Scaling Factor at each nodes
+    !   Calculate Element Scaling Factor by summing over the Scale at each nodes
+    !   Scale Element-wide Dee Matrix by the Element Scaling Factor
+    !   Calculate and tally up the stiffness matrix from each Gaussian IP
+
+  END SUBROUTINE MPMCORE_CONSTRUCT_DMMPM_STIFFNESS
+
+
+  SUBROUTINE MPMCORE_CONSTRUCT_GIMP_MASS_MATRIX(this)
+    !
+    !
+    !
+    IMPLICIT NONE
+    CLASS(mpm_body), INTENT(INOUT) :: this
+
+    ! For each Material Points:
+    !   Calculate GIMP Shape Function
+    !   Determine Streering Vector for building the Mass Matrix 
+    !   NB: The steering vector is contructed based on the supporting domain of
+    !       of the particles
+    !   For each supporting nodes:
+    !     Construct Local Mass Matrices
+    !     Sum over all supporting nodes
+    !   Add local mass matrix to global mass matrix (fsparv)
+  
+  END SUBROUTINE MPMCORE_CONSTRUCT_GIMP_MASS_MATRIX
+
+
   SUBROUTINE MPMCORE_ACTIVATE_NODE()
-  !   !
-  !   !
-  !   !
-  !   IMPLICIT NONE
-  !   Flags: DO bod=1,size(mbod)
-  !   IF(mbod(bod)%nmps>1)THEN  
-  !       mbod(bod)%ale=1
-  !       mbod(bod)%d_ele=0
-  !       mbod(bod)%c_ele=0
-  !       DO i=1, mbod(bod)%nmps
-  !           ! search in every elements
-  !           inner: DO iel=1,nels
-  !             ! calculate element column number based on current MP location
-  !             colx=mbod(bod)%gm_coord(1,i)/cellsize+1
-  !             ! calculate element row number based on current MP location
-  !             rowy=ABS(mbod(bod)%gm_coord(2,i))/cellsize+1
-  !             ! calculate element number of the current MP
-  !             ielloc=(rowy-1.0)*nx1+colx
-  !             ! assign element number to a_le
-  !             mbod(bod)%a_ele(i)=ielloc
-  !             ! get node coordinates of the element
-  !             num=g_num(:,ielloc)
-  !             coord=TRANSPOSE(g_coord(:,num))
-              
-  !             ! get current global MP coordinate
-  !             sp_coord(:,1)=mbod(bod)%gm_coord(:,i)
-  !             ! get previous local MP coordinate
-  !             lp_coord(1,:)=mbod(bod)%mpoints(i,:)
-  !             ! calculate local coordinate of the mp
-  !             CALL floc(coord,sp_coord,lp_coord,i)
-  !             ! reassign local coordinate back to mpoints
-  !             mbod(bod)%mpoints(i,:)=lp_coord(1,:)
-
-  !             ! mark activated node in d_ele
-  !             mbod(bod)%d_ele(ielloc)=1
-
-  !             IF(i>1)THEN
-  !               DO j=1,i-1
-  !                 IF(mbod(bod)%a_ele(j)==mbod(bod)%a_ele(i)) THEN
-  !                   EXIT inner
-  !                 END IF
-  !               END DO
-  !               ! tally the numbers of activated elements
-  !               mbod(bod)%ale=mbod(bod)%ale+1
-  !             END IF
-              
-  !             EXIT inner
-  !           END DO inner
-
-  !       END DO
-  !       ! Count MP in each cells
-  !       CALL couma(nels,mbod(bod)%nmps,mbod(bod)%a_ele,mbod(bod)%c_ele,mbod(bod)%k_ele,etype)
-
-  !       ! ------------- list the corresponding activated elements --------------
-
-  !       k=1
-  !       mbod(bod)%b=0
-  !       DO i=1,mbod(bod)%nmps
-  !         ! Get element number of current MP
-  !         iel=mbod(bod)%a_ele(i)
-  !         ! Loop through the MP of inhabited element
-  !         DO j=1,mbod(bod)%c_ele(iel)
-  !             ! 
-  !             IF(mbod(bod)%b(mbod(bod)%k_ele(iel-1)+j)==0) THEN
+    !   !
+    !   !
+    !   !
+    !   IMPLICIT NONE
+    !   Flags: DO bod=1,size(mbod)
+    !   IF(mbod(bod)%nmps>1)THEN  
+    !       mbod(bod)%ale=1
+    !       mbod(bod)%d_ele=0
+    !       mbod(bod)%c_ele=0
+    !       DO i=1, mbod(bod)%nmps
+    !           ! search in every elements
+    !           inner: DO iel=1,nels
+    !             ! calculate element column number based on current MP location
+    !             colx=mbod(bod)%gm_coord(1,i)/cellsize+1
+    !             ! calculate element row number based on current MP location
+    !             rowy=ABS(mbod(bod)%gm_coord(2,i))/cellsize+1
+    !             ! calculate element number of the current MP
+    !             ielloc=(rowy-1.0)*nx1+colx
+    !             ! assign element number to a_le
+    !             mbod(bod)%a_ele(i)=ielloc
+    !             ! get node coordinates of the element
+    !             num=g_num(:,ielloc)
+    !             coord=TRANSPOSE(g_coord(:,num))
                 
-  !               mbod(bod)%b(mbod(bod)%k_ele(iel-1)+j)=i
-  !               EXIT
-  !             END IF
-  !         END DO
-  !       END DO
-  !     END IF
-  !   END DO Flags
+    !             ! get current global MP coordinate
+    !             sp_coord(:,1)=mbod(bod)%gm_coord(:,i)
+    !             ! get previous local MP coordinate
+    !             lp_coord(1,:)=mbod(bod)%mpoints(i,:)
+    !             ! calculate local coordinate of the mp
+    !             CALL floc(coord,sp_coord,lp_coord,i)
+    !             ! reassign local coordinate back to mpoints
+    !             mbod(bod)%mpoints(i,:)=lp_coord(1,:)
+
+    !             ! mark activated node in d_ele
+    !             mbod(bod)%d_ele(ielloc)=1
+
+    !             IF(i>1)THEN
+    !               DO j=1,i-1
+    !                 IF(mbod(bod)%a_ele(j)==mbod(bod)%a_ele(i)) THEN
+    !                   EXIT inner
+    !                 END IF
+    !               END DO
+    !               ! tally the numbers of activated elements
+    !               mbod(bod)%ale=mbod(bod)%ale+1
+    !             END IF
+                
+    !             EXIT inner
+    !           END DO inner
+
+    !       END DO
+    !       ! Count MP in each cells
+    !       CALL couma(nels,mbod(bod)%nmps,mbod(bod)%a_ele,mbod(bod)%c_ele,mbod(bod)%k_ele,etype)
+
+    !       ! ------------- list the corresponding activated elements --------------
+
+    !       k=1
+    !       mbod(bod)%b=0
+    !       DO i=1,mbod(bod)%nmps
+    !         ! Get element number of current MP
+    !         iel=mbod(bod)%a_ele(i)
+    !         ! Loop through the MP of inhabited element
+    !         DO j=1,mbod(bod)%c_ele(iel)
+    !             ! 
+    !             IF(mbod(bod)%b(mbod(bod)%k_ele(iel-1)+j)==0) THEN
+                  
+    !               mbod(bod)%b(mbod(bod)%k_ele(iel-1)+j)=i
+    !               EXIT
+    !             END IF
+    !         END DO
+    !       END DO
+    !     END IF
+    !   END DO Flags
   END SUBROUTINE MPMCORE_ACTIVATE_NODE
+
 END MODULE MPM_CORE

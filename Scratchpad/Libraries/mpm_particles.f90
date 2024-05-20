@@ -19,7 +19,7 @@ MODULE CLASS_PARTICLE
     
     ! Variables to track material points
     INTEGER,ALLOCATABLE:: a_ele(:),c_ele(:),d_ele(:),b_ele(:),dp_ele(:),        &
-      flag(:),GIMP_nodes(:,:),GIMP_node_mp(:,:),k_ele(:),elemmpoints(:,:)
+      flag(:),GIMP_nodes(:,:),GIMP_node_mp(:,:),k_ele(:),member_elements(:,:)
     
     ! Material properties
     REAL(iwp),ALLOCATABLE:: dee(:,:),deeinv(:,:),epsinvacum(:),g_matrix(:),     &
@@ -78,7 +78,7 @@ MODULE CLASS_PARTICLE
     CALL input_json%GET('particles('//i_char//').generator.name', name)
     CALL input_json%GET('particles('//i_char//').generator.location', filename)
     this%name = name
-    
+
     ! get particle locations
     CALL IO_LOAD_PARTICLE(trim(directory), trim(filename), this%gm_coord)
     

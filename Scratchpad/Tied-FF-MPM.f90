@@ -36,6 +36,7 @@ PROGRAM Tied_Free_Field_MPM
                       ! it is also possible to have Plane Stress/Strain
                       ! conditions with nst = 4
   INTEGER :: nodof=2  ! Number of Degree of Freedom
+  INTEGER :: nip=4    ! Number of Gaussian Integration Point for Double Mapping
 
   !**************************** PREPARATION PHASE *****************************!
   !--- Initiate Program Settings  
@@ -79,6 +80,7 @@ PROGRAM Tied_Free_Field_MPM
   
   !--- Activate Initial Compulational Grid
   ! CALL MPMCORE_ACTIVATE_NODE()
+
   !--- Calculate Initial Conditions and Properties of Material Points
   ! Compute Dee Matrix (Constitutive Model)
   ! 
@@ -123,7 +125,11 @@ PROGRAM Tied_Free_Field_MPM
     ! Compute Mesh Momentum and Mass (GIMP / CMPM)
     
 
-    !--- Stiffness
+    !--- Compute Domain Stiffness Matrix
+    
+
+    !--- Compute Domain Mass Matrix
+
     !--- Combined Stiffness
 
     !************************ Plastic Strain Iteration ************************!

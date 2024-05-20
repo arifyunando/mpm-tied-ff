@@ -236,7 +236,7 @@ count_nodes: DO bod=1,size(mbod)
     !- IF mbod(bod)%kconst=1, then the stiffness in the full domain will be constant
     !- any other value avoid using a constant stiffness
     ALLOCATE(mbod(bod)%kconst(1))
-    mbod(bod)%kconst=1
+    mbod(bod)%kconst=0
 END DO count_nodes
 
 ALLOCATE(                                                                       &
@@ -519,8 +519,8 @@ Body_fixities: DO bod=1,size(mbod)
             END IF 
         END DO
     ELSE
-        IF(nip==4) mbod(bod)%lp_mp = cellsize/4.0   
-        IF(nip==9) mbod(bod)%lp_mp = cellsize/6.0   
+        IF(nip==4) mbod(bod)%lp_mp = cellsize/4.0   ! 2 mps on the left, 2 on the right
+        IF(nip==9) mbod(bod)%lp_mp = cellsize/6.0   ! 3 mps on the left, 3 on the right
         CALL GIMP_activenode(                                                   &
             g_num,nip,g_coord,mbod(bod)%gm_coord,mbod(bod)%lp_mp,               &
             mbod(bod)%gimptol,neighb,mbod(bod)%a_ele,mbod(bod)%nf,              &
