@@ -1792,7 +1792,7 @@ MODULE FUNCTIONS
         IF(a_ele(s)==iel)THEN 
           ! Material point is inside the element
           ! set factx from local mp coodinate relative to the element
-          factx = lm_coord(s,1) 
+          factx = lm_coord(1,s) 
         ELSE     
           ! Material point is outside the element
           IF(mp_coordx<node_coordx+tol)THEN          
@@ -1818,7 +1818,7 @@ MODULE FUNCTIONS
 
         !-- Evaluate local coordinate again in y-dir
         IF(a_ele(s)==iel)THEN
-            facty=lm_coord(s,2)
+            facty=lm_coord(2,s)
         ELSE 
             IF(mp_coordy>=node_coordy)THEN        
               ! point outside the element in the y direction (above the element)

@@ -6,11 +6,13 @@ MODULE CLASS_MESH
   TYPE::mpm_grid
     INTEGER:: id
     INTEGER:: mesh_ind  ! Indicates mesh type (+:rectilinear, -:isoparametric)
+                        ! For rectilinear (0-50: Cartesian; 51-100: Non-Cartesian)
     ! Constants
     INTEGER:: ndim          ! number of problem dimension
     INTEGER:: ndof, nodof   ! number of element degree of freedom, and node dof
     INTEGER:: nn, nels, nod ! number of nodes, elements, and node/element
     INTEGER:: nip           ! number of integration points
+    INTEGER:: nomps         ! number of material points per cell initially
 
     ! Tracking variables
     REAL(iwp),ALLOCATABLE:: g_coord(:,:) ! Node Global Coordinates
@@ -63,7 +65,7 @@ MODULE CLASS_MESH
     CLASS(mpm_grid), INTENT(INOUT) :: this
     INTEGER, OPTIONAL, INTENT(INOUT) :: nodof, nst
     CHARACTER(:), ALLOCATABLE :: filename, cell_type
-    INTEGER :: def_nodof=2, def_nst=4, mesh_ind
+    INTEGER :: def_nodof=2, def_nst=4, ind
 
     ! Default Arguments
     if (present(nodof)) def_nodof = nodof
@@ -74,7 +76,7 @@ MODULE CLASS_MESH
 
     ! Get Cell Type
     CALL input_json%GET('mesh.cell_type', cell_type)
-    if (cell_type == "ED2Q4G") mesh_ind = 1
+    if (cell_type == "ED2Q4G") this%mesh_ind = 4
 
     ! Get mesh nodal locations
     CALL IO_LOAD_MESH(trim(directory), trim(filename), this%g_coord, this%num)
@@ -104,7 +106,7 @@ MODULE CLASS_MESH
     CALL CLASS_MESH_FORM_STEERING_VECTOR(this)
 
     ! Determmine Cellsize
-    CALL CLASS_MESH_CALCULATE_CELLSIZE(this, mesh_ind)
+    CALL CLASS_MESH_CALCULATE_CELLSIZE(this)
   END SUBROUTINE CLASS_MESH_LOAD_MESH
 
 
@@ -164,7 +166,7 @@ MODULE CLASS_MESH
   END SUBROUTINE CLASS_MESH_FORM_STEERING_VECTOR
 
 
-  SUBROUTINE CLASS_MESH_CALCULATE_CELLSIZE(this, ind)
+  SUBROUTINE CLASS_MESH_CALCULATE_CELLSIZE(this)
     !
     ! Returns the cell size of each cell that build up the mesh 
     ! Note:
@@ -172,12 +174,11 @@ MODULE CLASS_MESH
     !
     IMPLICIT NONE
     CLASS(mpm_grid), INTENT(INOUT) :: this
-    INTEGER, INTENT(IN) :: ind
-    SELECT CASE(ind)
-    CASE (1) ! Cartesian Grid / Constant Cellsize
+    SELECT CASE(this%mesh_ind)
+    CASE (1:50) ! Cartesian Grid / Constant Cellsize
       ALLOCATE(this%cellsize(this%ndim, this%nels))
       this%cellsize = ABS(this%g_coord(1, 1) - this%g_coord(1, 2))
-    CASE (2) ! Rectilinear Grid / Constant Cellsize in 1-dir
+    CASE (51:) ! Rectilinear Grid / Constant Cellsize in 1-dir
       ! get all the node coordinates of the stencils
       ! nstencil = UBOUND(stencils, 1)
       ! ALLOCATE(coords(ndim,nstencil))
@@ -191,7 +192,7 @@ MODULE CLASS_MESH
       !   count = count + 1
       ! END DO
       ! cellsize = cellsize/count
-    CASE (3) ! Isoparametric
+    CASE (:-1) ! Isoparametric
     CASE DEFAULT
       WRITE(*, *) "Mesh shape index is not valid"
     END SELECT

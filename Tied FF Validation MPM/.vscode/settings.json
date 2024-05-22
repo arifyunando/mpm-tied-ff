@@ -1,0 +1,11 @@
+{
+    "editor.tabSize": 2,
+    "editor.stickyTabStops": true,
+    "editor.detectIndentation": false,
+    "fortran.linter.includePaths": [
+      "${workspaceFolder}/fem",
+      "${workspaceFolder}/mpm",
+      "${workspaceFolder}/Modules"
+    ],
+    "fortran.linter.modOutput": "${workspaceFolder}/Modules"
+}

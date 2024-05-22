@@ -1,0 +1,61 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34723.18
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "Earthquake Validation MPM", "Earthquake Validation MPM\Earthquake Validation MPM.vfproj", "{A16994F9-AD96-440D-9EAB-0C66737AFC67}"
+EndProject
+Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "Tied FF 4N FEM", "Tied FF 4N FEM\Tied FF 4N FEM.vfproj", "{713E78F3-2DDC-44D7-8DC4-74C554170F35}"
+EndProject
+Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "Tied FF Basic FEM", "Tied FF Basic FEM\Tied FF Basic FEM.vfproj", "{84BA93DA-DB30-4B06-819D-2AA37E482715}"
+EndProject
+Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "Tied FF Validation MPM", "Tied FF Validation MPM\Tied FF Validation MPM.vfproj", "{AA2C2990-D8AF-42BB-A8C9-C1DCA3513809}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A16994F9-AD96-440D-9EAB-0C66737AFC67}.Debug|x64.ActiveCfg = Debug|x64
+		{A16994F9-AD96-440D-9EAB-0C66737AFC67}.Debug|x64.Build.0 = Debug|x64
+		{A16994F9-AD96-440D-9EAB-0C66737AFC67}.Debug|x86.ActiveCfg = Debug|Win32
+		{A16994F9-AD96-440D-9EAB-0C66737AFC67}.Debug|x86.Build.0 = Debug|Win32
+		{A16994F9-AD96-440D-9EAB-0C66737AFC67}.Release|x64.ActiveCfg = Release|x64
+		{A16994F9-AD96-440D-9EAB-0C66737AFC67}.Release|x64.Build.0 = Release|x64
+		{A16994F9-AD96-440D-9EAB-0C66737AFC67}.Release|x86.ActiveCfg = Release|Win32
+		{A16994F9-AD96-440D-9EAB-0C66737AFC67}.Release|x86.Build.0 = Release|Win32
+		{713E78F3-2DDC-44D7-8DC4-74C554170F35}.Debug|x64.ActiveCfg = Debug|Win32
+		{713E78F3-2DDC-44D7-8DC4-74C554170F35}.Debug|x64.Build.0 = Debug|Win32
+		{713E78F3-2DDC-44D7-8DC4-74C554170F35}.Debug|x86.ActiveCfg = Debug|Win32
+		{713E78F3-2DDC-44D7-8DC4-74C554170F35}.Debug|x86.Build.0 = Debug|Win32
+		{713E78F3-2DDC-44D7-8DC4-74C554170F35}.Release|x64.ActiveCfg = Release|Win32
+		{713E78F3-2DDC-44D7-8DC4-74C554170F35}.Release|x64.Build.0 = Release|Win32
+		{713E78F3-2DDC-44D7-8DC4-74C554170F35}.Release|x86.ActiveCfg = Release|Win32
+		{713E78F3-2DDC-44D7-8DC4-74C554170F35}.Release|x86.Build.0 = Release|Win32
+		{84BA93DA-DB30-4B06-819D-2AA37E482715}.Debug|x64.ActiveCfg = Debug|Win32
+		{84BA93DA-DB30-4B06-819D-2AA37E482715}.Debug|x64.Build.0 = Debug|Win32
+		{84BA93DA-DB30-4B06-819D-2AA37E482715}.Debug|x86.ActiveCfg = Debug|Win32
+		{84BA93DA-DB30-4B06-819D-2AA37E482715}.Debug|x86.Build.0 = Debug|Win32
+		{84BA93DA-DB30-4B06-819D-2AA37E482715}.Release|x64.ActiveCfg = Release|Win32
+		{84BA93DA-DB30-4B06-819D-2AA37E482715}.Release|x64.Build.0 = Release|Win32
+		{84BA93DA-DB30-4B06-819D-2AA37E482715}.Release|x86.ActiveCfg = Release|Win32
+		{84BA93DA-DB30-4B06-819D-2AA37E482715}.Release|x86.Build.0 = Release|Win32
+		{AA2C2990-D8AF-42BB-A8C9-C1DCA3513809}.Debug|x64.ActiveCfg = Debug|Win32
+		{AA2C2990-D8AF-42BB-A8C9-C1DCA3513809}.Debug|x64.Build.0 = Debug|Win32
+		{AA2C2990-D8AF-42BB-A8C9-C1DCA3513809}.Debug|x86.ActiveCfg = Debug|Win32
+		{AA2C2990-D8AF-42BB-A8C9-C1DCA3513809}.Debug|x86.Build.0 = Debug|Win32
+		{AA2C2990-D8AF-42BB-A8C9-C1DCA3513809}.Release|x64.ActiveCfg = Release|Win32
+		{AA2C2990-D8AF-42BB-A8C9-C1DCA3513809}.Release|x64.Build.0 = Release|Win32
+		{AA2C2990-D8AF-42BB-A8C9-C1DCA3513809}.Release|x86.ActiveCfg = Release|Win32
+		{AA2C2990-D8AF-42BB-A8C9-C1DCA3513809}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F4233DFD-9D79-4F6B-9981-19EEA327B826}
+	EndGlobalSection
+EndGlobal

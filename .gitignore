@@ -1,11 +1,10 @@
 **/build
 **/.ipynb_checkpoints
-
-/Output
-/Input
-/Debug
-/Release
-/x64
+**/Output
+**/Debug
+**/Release
+**/Modules
+**/x64
 
 *.exe
 *.mod

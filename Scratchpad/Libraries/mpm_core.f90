@@ -19,7 +19,8 @@ MODULE MPM_CORE
     PROCEDURE :: SET_MATERIAL => MPMCORE_SET_MATERIAL
     PROCEDURE :: CONSTRUCT_DMMPM_STIFFNESS => MPMCORE_CONSTRUCT_DMMPM_STIFFNESS
     PROCEDURE :: FLAG_ELEMENTS => MPMCORE_FLAG_ELEMENTS
-    PROCEDURE :: ACTIVATE_ELEMENTS => MPMCORE_ACTIVATE_ELEMENTS
+    PROCEDURE :: GET_SUPPORT_ELEMENTS => MPMCORE_GET_SUPPORT_ELEMENTS
+    PROCEDURE :: GET_PARTICLE_SUPPORT_SIZE => MPMCORE_GET_PARTICLE_SUPPORT_SIZE
   END TYPE
 
   CONTAINS
@@ -38,12 +39,26 @@ MODULE MPM_CORE
       this%d_ele(1:grid%nels),                                                  &
       this%k_ele(0:grid%nels)                                                   &
     )
+
     this%a_ele = 0 ! element id for each material point
     this%c_ele = 0 ! total of MP inside each element
     this%k_ele = 0 ! total of MP in the domain
     this%d_ele = 0 ! activated element array (1 active/0 deactive)
   END SUBROUTINE MPMCORE_SET_MESH
 
+  SUBROUTINE MPMCORE_GET_PARTICLE_SUPPORT_SIZE(this)
+    !
+    ! Calculate lp for each material points
+    ! Note: Must be called after FLAG_ELEMENTS()
+    !       to make sure c_ele exists
+    !
+    IMPLICIT NONE
+    CLASS(mpm_body), INTENT(INOUT) :: this
+    INTEGER::i
+    DO i=1,this%nmps
+      this%lp(:,i) = this%mesh%cellsize(:,this%a_ele(i)) / INT(SQRT(REAL(this%c_ele(i))))
+    END DO
+  END SUBROUTINE MPMCORE_GET_PARTICLE_SUPPORT_SIZE
 
   SUBROUTINE MPMCORE_SET_MATERIAL(this, input_json)
     !
@@ -71,7 +86,8 @@ MODULE MPM_CORE
   ! TODOs
   SUBROUTINE MPMCORE_CONSTRUCT_DMMPM_STIFFNESS(this,nip,nst)
     !
-    !
+    ! Construct Stiffness Matrix According to DM-MPM Formulation
+    ! cf. Gonzales Acosta, 2021. page 54 Eq.3.9
     !
     USE FUNCTIONS
     IMPLICIT NONE
@@ -86,7 +102,7 @@ MODULE MPM_CORE
     REAL(iwp),ALLOCATABLE::scaled_dee(:,:),jac(:,:),bee(:,:),km(:,:)
     REAL(iwp),ALLOCATABLE::weights(:),points(:,:)
     CHARACTER(13)::element='quadrilateral'
-    ! Memory Allocations
+    ! Local Memory Allocations
     ALLOCATE(                                     &
       num(this%mesh%nod),                         &
       node_num(this%mesh%nod,1),                  &
@@ -181,7 +197,9 @@ MODULE MPM_CORE
 
   SUBROUTINE MPMCORE_FLAG_ELEMENTS(this)
       !
-      ! Flag Elements for Activation
+      ! Look for all the elements that are affected by particles and mark it
+      ! in a_ele, c_ele, and d_ele. Also, determine the local coordinates
+      ! in lp_coord
       !
       USE FUNCTIONS
       IMPLICIT NONE
@@ -194,7 +212,7 @@ MODULE MPM_CORE
       INTEGER::i,iel,count_mp
       ALLOCATE(sp_coord(this%mesh%ndim,1),lp_coord(1,this%mesh%ndim))
       SELECT CASE (this%mesh%mesh_ind)
-      CASE(4) ! Quadrilateral Rectinilear 4 Element
+      CASE(4) ! Quadrilateral Cartesian 4 Element
         ALLOCATE(num(this%mesh%nn))
         this%n_active_ele=1
         this%d_ele=0
@@ -239,7 +257,7 @@ MODULE MPM_CORE
   END SUBROUTINE MPMCORE_FLAG_ELEMENTS
 
 
-  SUBROUTINE MPMCORE_ACTIVATE_ELEMENTS(this)
+  SUBROUTINE MPMCORE_GET_SUPPORT_ELEMENTS(this)
     !
     ! Activate element by assigning active element variable to body
     !
@@ -256,6 +274,6 @@ MODULE MPM_CORE
       nels=this%mesh%nels,                  &
       lp=this%lp                            &
     )
-  END SUBROUTINE MPMCORE_ACTIVATE_ELEMENTS
+  END SUBROUTINE MPMCORE_GET_SUPPORT_ELEMENTS
 
 END MODULE MPM_CORE

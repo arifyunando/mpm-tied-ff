@@ -12,10 +12,10 @@ PROGRAM Tied_Free_Field_MPM
   CHARACTER(:), ALLOCATABLE :: output_directory
 
   ! Data Structure
-  TYPE(json_file) :: input_json           ! Main input file
-  TYPE(mpm_body), ALLOCATABLE  :: mbod(:) ! may have multiple mp bodies
-  TYPE(fem_body), ALLOCATABLE  :: fbod(:) ! may have multiple fe bodies
-  TYPE(mpm_grid)  :: mesh                 ! main computaion mesh, singleton
+  TYPE(json_file) :: input_json ! Main input file
+  TYPE(mpm_body)  :: mbod       ! Simulated body
+  TYPE(fem_body)  :: ffbod(2)   ! Free-Field bodies
+  TYPE(mpm_grid)  :: mesh       ! Computaional background mesh
 
   !--- Time Stepping and Iteration Variables
   ! Time Stepping
@@ -58,31 +58,25 @@ PROGRAM Tied_Free_Field_MPM
   !                                                                            !
 
   !--- Load Material Points / Particle Bodies
-  CALL input_json%INFO('particles', found, dummy, index)
-  ALLOCATE(mbod(index))
-  IF ( found ) THEN
-    DO i=1, index
-      CALL mbod(i)%LOAD_PARTICLES(i, input_directory, input_json)
-    END DO
-  END IF
+  CALL mbod%LOAD_PARTICLES(1, input_directory, input_json)
 
   !--- Initiate Mesh
   CALL mesh%LOAD_MESH(input_directory, input_json)
-  mesh%mesh_ind=4
   
   !--- Insert Material Points to Background Mesh
-  CALL mbod(1)%SET_MESH(mesh)
+  CALL mbod%SET_MESH(mesh)
   
   !--- Load Material Constitutive Model Parameters
-  CALL mbod(1)%SET_MATERIAL(input_json)
+  CALL mbod%SET_MATERIAL(input_json)
 
 
   !**************************** INITIAL CONDITIONS ****************************!
   !                                                                            !
   
   !--- Activate/Flag Initial Compulational Grid
-  CALL mbod(1)%FLAG_ELEMENTS
-  CALL mbod(1)%ACTIVATE_ELEMENTS
+  CALL mbod%FLAG_ELEMENTS()
+  CALL mbod%GET_PARTICLE_SUPPORT_SIZE()
+  CALL mbod%GET_SUPPORT_ELEMENTS()
 
   !--- Calculate Initial Material Points State (Mass, Velocity, Stresses, Loads)
   
@@ -93,17 +87,17 @@ PROGRAM Tied_Free_Field_MPM
 
   CALL IO_POINT_VIZ(                         &
     input=0,                                 &
-    coord=mbod(1)%gm_coord,                  &
-    a_ins=mbod(1)%a_ins,                     &
-    evpt=mbod(1)%epsinvacum,                 &
-    m_stress=mbod(1)%m_stress,               &
-    m_stress_inc=mbod(1)%m_stress_change,    &
-    acc=mbod(1)%m_acc,                       &
-    velocity=mbod(1)%m_velocity,             &
-    cohesion=mbod(1)%mpcp,                   &
-    devstress=mbod(1)%devstress,             &
-    meanstress=mbod(1)%mean_stress,          &
-    mpyield=mbod(1)%mpyield,                 &
+    coord=mbod%gm_coord,                     &
+    a_ins=mbod%a_ins,                        &
+    evpt=mbod%epsinvacum,                    &
+    m_stress=mbod%m_stress,                  &
+    m_stress_inc=mbod%m_stress_change,       &
+    acc=mbod%m_acc,                          &
+    velocity=mbod%m_velocity,                &
+    cohesion=mbod%mpcp,                      &
+    devstress=mbod%devstress,                &
+    meanstress=mbod%mean_stress,             &
+    mpyield=mbod%mpyield,                    &
     directory=output_directory               &
   )
   
@@ -128,16 +122,17 @@ PROGRAM Tied_Free_Field_MPM
     !--- Body Solution
     ! Reset Variables
     converged = .TRUE.
-    CALL mbod(1)%RESET_MP()
+    CALL mbod%RESET_MP()
     
     !--- Compute Domain Stiffness Matrix
-    CALL mbod(1)%CONSTRUCT_DMMPM_STIFFNESS(nip, nst)
-
-    ! Compute Mesh Momentum and Mass (GIMP / CMPM)
+    CALL mbod%CONSTRUCT_DMMPM_STIFFNESS(nip, nst)
 
     !--- Compute Domain Mass Matrix
 
     !--- Combined Stiffness
+    
+    ! FOR TESTING
+    mbod%gm_coord(1,:) = mbod%gm_coord(1,:) + 0.0002
 
     !************************ Plastic Strain Iteration ************************!
     iteration = 0
@@ -154,17 +149,17 @@ PROGRAM Tied_Free_Field_MPM
     IF (print_steps == output_steps .and. .false.) THEN
       CALL IO_POINT_VIZ(                         &
         input=step,                              &
-        coord=mbod(1)%gm_coord,                  &
-        a_ins=mbod(1)%a_ins,                     &
-        evpt=mbod(1)%epsinvacum,                 &
-        m_stress=mbod(1)%m_stress,               &
-        m_stress_inc=mbod(1)%m_stress_change,    &
-        acc=mbod(1)%m_acc,                       &
-        velocity=mbod(1)%m_velocity,             &
-        cohesion=mbod(1)%mpcp,                   &
-        devstress=mbod(1)%devstress,             &
-        meanstress=mbod(1)%mean_stress,          &
-        mpyield=mbod(1)%mpyield,                 &
+        coord=mbod%gm_coord,                     &
+        a_ins=mbod%a_ins,                        &
+        evpt=mbod%epsinvacum,                    &
+        m_stress=mbod%m_stress,                  &
+        m_stress_inc=mbod%m_stress_change,       &
+        acc=mbod%m_acc,                          &
+        velocity=mbod%m_velocity,                &
+        cohesion=mbod%mpcp,                      &
+        devstress=mbod%devstress,                &
+        meanstress=mbod%mean_stress,             &
+        mpyield=mbod%mpyield,                    &
         directory=output_directory               &
       )
       
@@ -180,5 +175,7 @@ PROGRAM Tied_Free_Field_MPM
     END IF
     !--- Reallocate Memory
     !--- Determine and Activate New Element for Next Time Step
+    CALL mbod%FLAG_ELEMENTS()
+    CALL mbod%GET_SUPPORT_ELEMENTS()
   END DO TIME_STEPS
 END PROGRAM Tied_Free_Field_MPM

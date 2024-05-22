@@ -27,13 +27,13 @@ MODULE CLASS_PARTICLE
     INTEGER,ALLOCATABLE:: base_nn(:)
     
     ! Variables to track material points
+    INTEGER:: n_active_ele
     INTEGER,ALLOCATABLE:: a_ele(:) ! Element index each MP resides 
     INTEGER,ALLOCATABLE:: c_ele(:) ! Number of MPs inside a given element
     INTEGER,ALLOCATABLE:: d_ele(:) ! Active element (1:active; 0:deactive)
     INTEGER,ALLOCATABLE:: k_ele(:) ! Accumulation of c_ele
     INTEGER,ALLOCATABLE:: support_nodes(:,:) ! List of Node ids inside mp support domain
     INTEGER,ALLOCATABLE:: member_elements(:,:) ! list of Elements ids inside mp support domain
-    INTEGER:: n_active_ele
     
     ! Active Elements Variable
     REAL(iwp),ALLOCATABLE:: g_coord(:,:) ! Mesh node global coordinates
@@ -173,14 +173,14 @@ MODULE CLASS_PARTICLE
 
     ! Allocate Particle Material Properties
     ALLOCATE(                                   &
-      this%m_volume(this%nmps),                 &
+      this%lm_coord(def_ndim, this%nmps),       &
+      this%b(this%nmps),                        &
       this%mweights(this%nmps),                 &
       this%m_mass(this%nmps),                   &
+      this%m_volume(this%nmps),                 &
       this%m_stress(def_nst, this%nmps),        &
       this%m_velocity(def_nodof, this%nmps),    &
       this%a_ins(def_ndim, this%nmps),          &
-      this%b(this%nmps),                        &
-      this%lm_coord(def_ndim, this%nmps),       &
       this%a_ele(this%nmps),                    &
       this%accp(def_ndim, this%nmps),           &
       this%vccp(def_ndim, this%nmps),           &
