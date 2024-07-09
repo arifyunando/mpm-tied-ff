@@ -11,7 +11,7 @@ INTEGER,PARAMETER::iwp=SELECTED_REAL_KIND(15)
 !** Counters and placeholders
 INTEGER:: i,j,k,w,m,n,q,s,iel,iters,nsrf,ale,limit,bod,plc,printval,            &
     colx,rowy,ielloc,bod2,bod3,iel2,nnx,nny,tcel,step,iters2,noddir,            &
-    itersstep,accdata
+    itersstep,accdata,z
 
 !** Element/mesh properties
 INTEGER:: ndim=2,ndof=8,nels,neq,nip=4,nn,nod=4,                                &
@@ -20,7 +20,7 @@ INTEGER:: ndim=2,ndof=8,nels,neq,nip=4,nn,nod=4,                                
     cont1,cont2,nnxe,nnye,eq1,eq2,dist_y,aiters,count,dist_x,elcont,mvval  
 
 REAL(iwp)::h1,h2,s1,w1,w2,lowbound,maxbound,                                    &
-    cellsize,Gravf,HSURF,waverage,fm,fk,upbound
+    cellsize,Gravf,HSURF,waverage,fm,fk,upbound,leftbound,rightbound
 
 LOGICAL:: shape=.false.,slope=.false.,equilibrium=.false.,newrapconv1
 
@@ -78,6 +78,9 @@ REAL(iwp),ALLOCATABLE::bee(:,:),coord(:,:),dee(:,:),                            
     eldGIMP(:),sp_coord(:,:),lp_coord(:,:),km_gauss(:,:),mm_gimp(:,:),          &
     km(:,:),vel_change(:),eps_2(:)
 
+!Freefield Variables
+INTEGER::ffnodes,ffcount
+
 !** Data structures
 TYPE::mpm_body
     CHARACTER(10):: name
@@ -115,6 +118,9 @@ TYPE::mpm_body
     !Contact-specific variables
     REAL(iwp):: phi,gimptol
     LOGICAL::activate=.false.
+    !Freefield Variables
+    REAL(iwp),ALLOCATABLE:: left_ff(:,:),right_ff(:,:),kinup_freefield_x1(:),   &
+        ff_force(:)
 END TYPE
 
 !** Define the MPM objects to be used in the simulation
@@ -139,8 +145,10 @@ REAL(iwp),ALLOCATABLE::ini_volume(:),gm_coord(:,:),m_coord(:,:),                
 !-------------------------- input and initialisations --------------------------
 nlen=7
 argv='Results'
-OPEN(10,FILE='Input/mpm/Datafound.dat',status='old')
-OPEN(300,FILE='Input/mpm/Groundacc.dat',status='old')
+OPEN(10,FILE='Input/Datafound.dat',status='old')
+OPEN(300,FILE='Input/Groundacc.dat',status='old')
+OPEN(310,FILE='Input/Groundacc.dat',status='old')
+OPEN(320,FILE='Input/Groundacc.dat',status='old')
 !** Read body 1 - the slope
 bod=1          
 READ(10,*) mbod(bod)%name,mbod(bod)%slopeopt,mbod(bod)%w1,mbod(bod)%h1,         &
@@ -167,7 +175,7 @@ ploop=0
 
 !PRINT*,'Printing results:'
 !READ(*,*) printval
-printval = 1000
+printval = 10
 
 Tini  = 0.0
 Tfin  = 0.0
@@ -390,7 +398,7 @@ DO bod=1,size(mbod)
     dist_x = mbod(bod)%dist_x+mbod(bod)%nx1
     dist_y = mbod(bod)%dist_y+mbod(bod)%ny1
 END DO  
-nx1  = dist_x+30 !In this step is to add 3 columns of elements to the right of the domain
+nx1  = dist_x+2 !In this step is to add 2 columns of elements to the right of the domain
 ny1  = dist_y+1
 nx2  = 0
 ny2  = 0
@@ -532,44 +540,56 @@ Body_fixities: DO bod=1,size(mbod)
             mbod(bod)%elemmpoints                                               &
         )
     END IF
+    
+    leftbound=minval(g_coord(1,:))
+    rightbound=maxval(g_coord(1,:))
 
-    lowbound = minval(g_coord)
-    upbound  = maxval(g_coord)
+    lowbound=minval(g_coord(2,:))
+    upbound=maxval(g_coord(2,:))
 
     j = 1
     m = 1
-    mbod(bod)%boundnod=0
+    mbod(bod)%boundnod=0 !not important (as)
     IF(bod==1)THEN
         DO i=1,nn
             !-Body fixities  
-            IF(g_coord(2,i)<lowbound+cellsize+0.01) mbod(bod)%nf(2,i)=0
+            IF(g_coord(2,i) < lowbound+cellsize+0.01) THEN      ! slip horizontal bcs for 2 rows of bottom nodes
+                mbod(bod)%nf(2,i)=0
+            END IF                        
+            !- Commented out bcoz causing locking problems
+            !IF(g_coord(1,i) < leftbound+cellsize*2+0.01) THEN   ! slip vertical bcs for 3 columns of left nodes
+            !    mbod(bod)%nf(1,i)=0
+            !END IF                        
+            !IF(g_coord(1,i) > rightbound-cellsize*2-0.01) THEN  ! slip vertical bcs for 3 columns of right nodes
+            !    mbod(bod)%nf(1,i)=0
+            !END IF
             IF(g_coord(2,i)<lowbound+cellsize+0.01)THEN
                 mbod(bod)%boundnod(m)=i
                 m=m+1
             END IF  
 
             !-Global fixities
-            IF(g_coord(1,i)<cellsize+0.01_iwp)      nf(1,i)=0
-            IF(g_coord(1,i)<0.01_iwp)               nf(:,i)=0
-            IF(g_coord(2,i)<lowbound+0.01+cellsize) nf(:,i)=0  
+            IF(g_coord(1,i)<cellsize+0.01_iwp)      nf(1,i)=0 ! x-dir boundary on left side
+            IF(g_coord(1,i)<0.01_iwp)               nf(:,i)=0 ! no dof on the left-most nodes
+            IF(g_coord(2,i)<lowbound+0.01+cellsize) nf(:,i)=0 ! no dof on the 2 rows of bottom nodes
         END DO
     END IF
 
-    IF(bod==2)THEN
-        DO i=1,nn
-            !-Body fixities  
-            mbod(bod)%nf(2,i)=0
-            IF(g_coord(2,i)<lowbound+cellsize+0.01)THEN
-                mbod(bod)%boundnod(m)=i
-                m=m+1
-            END IF  
-
-            !-Global fixities
-            IF(g_coord(1,i)<cellsize+0.01_iwp)nf(1,i)=0
-            IF(g_coord(1,i)<0.01_iwp)nf(:,i)=0
-            IF(g_coord(2,i)<lowbound+0.01+cellsize)nf(:,i)=0  
-        END DO
-    END IF
+    !IF(bod==2)THEN
+    !    DO i=1,nn
+    !        !-Body fixities  
+    !        mbod(bod)%nf(2,i)=0
+    !        IF(g_coord(2,i)<lowbound+cellsize+0.01)THEN
+    !            mbod(bod)%boundnod(m)=i
+    !            m=m+1
+    !        END IF  
+    !
+    !        !-Global fixities
+    !        IF(g_coord(1,i)<cellsize+0.01_iwp)nf(1,i)=0
+    !        IF(g_coord(1,i)<0.01_iwp)nf(:,i)=0
+    !        IF(g_coord(2,i)<lowbound+0.01+cellsize)nf(:,i)=0  
+    !    END DO
+    !END IF
 
     CALL formnf(mbod(bod)%nf)
     mbod(bod)%neq=MAXVAL(mbod(bod)%nf)
@@ -600,7 +620,9 @@ Body_fixities: DO bod=1,size(mbod)
         mbod(bod)%x1_ini(0:mbod(bod)%neq),                                      &
         mbod(bod)%x1_change(0:mbod(bod)%neq),                                   &
         mbod(bod)%f_earth(0:mbod(bod)%neq),                                     &
+        mbod(bod)%ff_force(0:mbod(bod)%neq),                                    & ! Freefield
         mbod(bod)%kinup_Ground_d2x1(0:mbod(bod)%neq),                           &
+        mbod(bod)%kinup_freefield_x1(0:mbod(bod)%neq),                          & ! Freefield
         mbod(bod)%cdamp(0:mbod(bod)%neq),                                       &
         mbod(bod)%mvkv(0:mbod(bod)%neq)                                         &
     )
@@ -746,6 +768,14 @@ READ(300,*)accdata
 ALLOCATE(mbod(bod)%ground_acc(accdata))
 READ(300,*)mbod(bod)%ground_acc
 
+READ(310,*)ffnodes,ffcount
+ALLOCATE(mbod(bod)%left_ff(ffnodes,ffcount))
+READ(310,*)mbod(bod)%left_ff
+
+READ(320,*)ffnodes,ffcount
+ALLOCATE(mbod(bod)%right_ff(ffnodes,ffcount))
+READ(320,*)mbod(bod)%right_ff
+
 w=1
 stable=.true.
 
@@ -754,8 +784,9 @@ stable=.true.
 !!==============================================================================
 
 step=0
-time_steps: DO w=1,10000000
+time_steps: DO w=1,10000
     step = step + 1 
+    PRINT '("Steps :" (I10) "/" (I10))', step, 10000
 
     Body_Solution: DO bod=1,size(mbod)
         IF(mbod(bod)%nmps>1)THEN 
@@ -792,7 +823,11 @@ time_steps: DO w=1,10000000
             mbod(bod)%f_earth    = zero
             newrapconv1          = .TRUE.
             mvval = 1
-
+            
+            ! Freefield
+            mbod(bod)%kinup_freefield_x1 = zero
+            mbod(bod)%ff_force    = zero
+            
             !---Compute mesh momentum and mass
             Fext_Mass_P: DO i=1,mbod(bod)%nmps
                 IF(mbod(bod)%nmps>1)THEN 
@@ -995,7 +1030,7 @@ time_steps: DO w=1,10000000
     Combined_Stiffness:DO bod=1,size(mbod)  
         IF(mbod(bod)%nmps>1)THEN 
             !- The stiffness matrix and the mass matrix 
-            !  stays constant through the analisys 
+            !  stays constant through the iteration 
             mbod(bod)%kp = 4.0_iwp*mbod(bod)%mv/dtim**2 +                       &
                 2.0_iwp*fm*mbod(bod)%mv/dtim +                                  &
                 2.0_iwp*fk*mbod(bod)%kv/dtim + mbod(bod)%kv                     
@@ -1148,21 +1183,62 @@ time_steps: DO w=1,10000000
             newrapconv1=.false.
         END IF    
 
+        !-------------------------------------------------------------------------------
+        !   SEISMIC LOADINGS - Added for AS's Master Thesis [START]
+        !-------------------------------------------------------------------------------
+        ! Ground Motion Acceleration and Free Field Displacement
         DO bod=1,size(mbod)
             IF(w<=accdata)THEN
                 DO i=1,nn
-                    IF(                                                         &
+                    IF(                                                         & ! if node is an active bottom boundary
                         g_coord(2,i)<lowbound+cellsize+0.01_iwp .and.           &
                         mbod(bod)%nf(1,i)>0                                     &
                     ) THEN
-                        mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i)) =        &
-                            mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i)) +    &
+                        mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i)) =        & ! calculate the node acceleration by
+                            mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i)) +    & ! ground_motion_acc - current_iter_acc
                             (                                                   &
                                 mbod(bod)%ground_acc(w) -                       &
                                 mbod(bod)%kinup_d2x1(mbod(bod)%nf(1,i))         &
                             )
                         mbod(bod)%kinup_Ground_d2x1(0)=zero
-                    END IF    
+                    !ELSE IF(g_coord(1,i) < leftbound+cellsize*2+0.01 .and. mbod(bod)%nf(1,i)>0) THEN   ! left boundary acceleration
+                    !    mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i)) =        & ! calculate the node acceleration by
+                    !        mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i)) +    & ! ground_motion_acc - current_iter_acc
+                    !        (                                                   &
+                    !            mbod(bod)%ground_acc(w) -                       &
+                    !            mbod(bod)%kinup_d2x1(mbod(bod)%nf(1,i))         &
+                    !        )
+                    !    mbod(bod)%kinup_Ground_d2x1(0)=zero
+                    !ELSE IF(g_coord(1,i) > rightbound-cellsize*2-0.01 .and. mbod(bod)%nf(1,i)>0) THEN   ! right boundary acceleration
+                    !    mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i)) =        & ! calculate the node acceleration by
+                    !        mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i)) +    & ! ground_motion_acc - current_iter_acc
+                    !        (                                                   &
+                    !            mbod(bod)%ground_acc(w) -                       &
+                    !            mbod(bod)%kinup_d2x1(mbod(bod)%nf(1,i))         &
+                    !        )
+                    !    mbod(bod)%kinup_Ground_d2x1(0)=zero
+                    END IF
+                    
+                    IF(g_coord(1,i) < leftbound+cellsize*2+0.01 .and. g_coord(2,i)<lowbound+cellsize+0.01_iwp .and. mbod(bod)%nf(1,i)>0) THEN   ! left boundary acceleration                                
+                        z = imod(i,13)
+                        mbod(bod)%kinup_freefield_x1(mbod(bod)%nf(1,i)) =        &
+                            mbod(bod)%kinup_freefield_x1(mbod(bod)%nf(1,i)) +    &
+                            (                                                    &
+
+                                mbod(bod)%left_ff(z+1,w/10+1) +                  &
+                                mbod(bod)%x1(mbod(bod)%nf(1,i))                  &
+                            )
+                        mbod(bod)%kinup_freefield_x1(0)=zero
+                    ELSE IF(g_coord(1,i) > rightbound-cellsize*2-0.01 .and. g_coord(2,i)<lowbound+cellsize+0.01_iwp .and. mbod(bod)%nf(1,i)>0) THEN   ! right boundary acceleration
+                        z = imod(i,13)
+                        mbod(bod)%kinup_freefield_x1(mbod(bod)%nf(1,i)) =        &
+                            mbod(bod)%kinup_freefield_x1(mbod(bod)%nf(1,i)) +    &
+                            (                                                    &
+                                mbod(bod)%right_ff(z+1,w/10+1) +                 & ! add ff displacement
+                                mbod(bod)%x1(mbod(bod)%nf(1,i))                  & ! remove nodal displacement at current iteration
+                            )
+                        mbod(bod)%kinup_freefield_x1(0)=zero
+                    END IF
                 END DO
             END IF
         END DO
@@ -1174,17 +1250,29 @@ time_steps: DO w=1,10000000
                 mbod(bod)%f_earth(0)=zero
             END IF
         END DO Ground_F 
+        
+        ! Displacement Based Boundary Conditions
+        FF_force: DO bod=1,size(mbod)
+            IF(mbod(bod)%nmps>1)THEN
+                mbod(bod)%ff_force=zero
+                CALL linmul_sky(mbod(bod)%kv,mbod(bod)%kinup_freefield_x1,mbod(bod)%ff_force,mbod(bod)%kdiag)
+                mbod(bod)%ff_force(0)=zero
+            END IF
+        END DO FF_force
+        
+        !-------------------------------------------------------------------------------
+        !   SEISMIC LOADINGS - Added for AS's Master Thesis [END]
+        !-------------------------------------------------------------------------------
 
-        !-Kinematic update of acceleration and velocity without considering any 
-        ! boundary condition (contact)
+        !-Kinematic update of acceleration and velocity without considering any boundary condition (contact)
         DO bod=1,size(mbod)
             !--a1= acceleration at time = t+Dt in the nodes = d1x1/f2+d2x1*(pt5/beta-one) 
             ! from the solution in the nodes 
-            mbod(bod)%kinup_d2x1 = (4.0_iwp*mbod(bod)%x1/dtim**2) -             &
-                                   (4.0_iwp*mbod(bod)%d1x1/dtim)-mbod(bod)%d2x1   
+            mbod(bod)%kinup_d2x1 = (4.0_iwp*mbod(bod)%x1/dtim**2) - (4.0_iwp*mbod(bod)%d1x1/dtim) - mbod(bod)%d2x1   
             mbod(bod)%kinup_d2x1(0)=zero
         END DO 
 
+        ! Force Equivalent for previous damping terms [AS]
         Damping_force: DO bod=1,size(mbod)
             IF(mbod(bod)%nmps>1)THEN
                 mbod(bod)%cdamp=zero
@@ -1194,6 +1282,7 @@ time_steps: DO w=1,10000000
             END IF
         END DO Damping_force
 
+        ! Force equivalent of previous inertial terms [AS]
         Force_MA: DO bod=1,size(mbod)
             IF(mbod(bod)%nmps>1)THEN 
                 !--Multiplication of the mass matrix per the acceleration vector vcm=Ma 
@@ -1202,12 +1291,14 @@ time_steps: DO w=1,10000000
             END IF
         END DO Force_MA   
 
+        ! Solve Governing Equation for Displacement Increment and accumulate to %x1 [AS]
         DISPLACEMENTS: DO bod=1,size(mbod)
             mbod(bod)%loads=zero
             mbod(bod)%loads=mbod(bod)%gravlo-                                   &
                             mbod(bod)%ddylds-                                   &
                             mbod(bod)%vcm+                                      &
                             mbod(bod)%f_earth-                                  &
+                            mbod(bod)%ff_force-                                 & ! Freefield
                             mbod(bod)%cdamp
             mbod(bod)%loads(0)=zero 
             CALL spabac(mbod(bod)%kp,mbod(bod)%loads,mbod(bod)%kdiag)  
@@ -1216,13 +1307,15 @@ time_steps: DO w=1,10000000
             mbod(bod)%x1(0)=zero
         END DO DISPLACEMENTS
 
+        ! Kinematic Update (acceleration and velocity) based on Newmark's Time Itegration (eq. 2.27 & 2.28 Leon's Dissertation) [AS]
         DO bod=1,size(mbod)
-            mbod(bod)%kinup_d2x1=(4.0_iwp*mbod(bod)%x1/dtim**2)-(4.0_iwp*mbod(bod)%d1x1/dtim)-mbod(bod)%d2x1 
+            mbod(bod)%kinup_d2x1=(4.0_iwp*mbod(bod)%x1/dtim**2) - (4.0_iwp*mbod(bod)%d1x1/dtim) - mbod(bod)%d2x1 
             !--Upgrade lagrangian phase, in the paper (wang)pag.162: v=(2/Dt)u-v  
             mbod(bod)%kinup_d1x1=2.0_iwp*mbod(bod)%x1/dtim-mbod(bod)%d1x1       
             mbod(bod)%kinup_d1x1(0)=zero;mbod(bod)%kinup_d2x1(0)=zero
         END DO 
 
+        ! Check convergence
         bod=1
         CALL checon_1(mbod(bod)%loads, mbod(bod)%x1_change, newrapconv1, tol) 
         mbod(bod)%x1_change=mbod(bod)%x1
@@ -1238,6 +1331,7 @@ time_steps: DO w=1,10000000
                     coord=TRANSPOSE(g_coord(:,num))
                     g=mbod(bod)%g_g(:,iel)
 
+                    !  This section is used to calculate element STRAINS with different methods [AS]
                     !- The following is the use of the CMPM technique to compute stresses using neighbouring element strains
                     !- Note that "values" equal to 16 indicate that only elements surounded by elements with material points are considered
                     !- therefore boundary elements are not considered, since they are not surounded by filled elements
@@ -1311,6 +1405,7 @@ time_steps: DO w=1,10000000
                     IF(fnew>fmax)fmax=fnew
                     epsinv=mbod(bod)%epsinvacum(i)
 
+                    ! plastice loop (ploop==0) is turned off, so this section is skipped [AS]
                     Yieldf:IF(fnew>zero.and.ploop==1)THEN
                         stress=mbod(bod)%m_stress(:,i)  !Stresses inside the yield function (elastic range)    
                         CALL alphavalue2(mbod(bod)%mpcp(i),stress,sigma+stress,alpha_2)
@@ -1447,7 +1542,7 @@ time_steps: DO w=1,10000000
                     END IF Yieldf
 
                     mbod(bod)%m_stress(:,i) = stress
-                    CALL invar(stress,sigm,dsbar,lode_theta)
+                    CALL invar(stress,sigm,dsbar,lode_theta) ! Recalculated to find invariants after stress is redistributed
                     ps1 = sigm+(2.0/3.0)*dsbar*sin(lode_theta-(2.0*3.1415926/3.0))
                     ps2 = sigm+(2.0/3.0)*dsbar*sin(lode_theta)
                     ps3 = sigm+(2.0/3.0)*dsbar*sin(lode_theta+(2.0*3.1415926/3.0))
@@ -1508,6 +1603,7 @@ time_steps: DO w=1,10000000
                 mbod(bod)%a_ins(:,i) = mbod(bod)%a_ins(:,i)+mbod(bod)%ins(:,i)
                 mbod(bod)%gm_coord(:,i) = mbod(bod)%gm_coord(:,i) +             &
                                           mbod(bod)%ins(:,i)
+                
                 DEALLOCATE(                                                     &
                     derextend,beeextend,funextend2,eldddylds,                   &
                     funextend,jac_coord,eldCMPM                                 &
@@ -1541,7 +1637,7 @@ time_steps: DO w=1,10000000
                     mbod(bod)%m_acc,mbod(bod)%nmps,nlen                         &
                 )
                     
-                PRINT '("Steps :" (I8) "/" (I8))', step, 10000000
+                !PRINT '("Steps :" (I8) "/" (I8))', step, 10000000
             END IF
         END IF
     END DO
@@ -1636,9 +1732,11 @@ time_steps: DO w=1,10000000
                     )
                 END IF
 
+                leftbound=minval(g_coord(1,:))
+                rightbound=maxval(g_coord(1,:))
 
-                lowbound=minval(g_coord)
-                upbound=maxval(g_coord)
+                lowbound=minval(g_coord(2,:))
+                upbound=maxval(g_coord(2,:))
 
                 j=1
                 m=1
@@ -1646,17 +1744,25 @@ time_steps: DO w=1,10000000
                 IF(bod==1)THEN
                     DO i=1,nn
                         !-Body fixities  
-                        IF(g_coord(2,i)<lowbound+cellsize+0.01) THEN
+                        IF(g_coord(2,i) < lowbound+cellsize+0.01) THEN      ! slip horizontal bcs for 2 rows of bottom nodes
                             mbod(bod)%nf(2,i)=0
-                        END IF
+                        END IF                        
+                        !- Commented out bcoz causing locking problems
+                        !IF(g_coord(1,i) < leftbound+cellsize*2+0.01) THEN   ! slip vertical bcs for 3 columns of left nodes
+                        !    mbod(bod)%nf(1,i)=0
+                        !END IF                        
+                        !IF(g_coord(1,i) > rightbound-cellsize*2-0.01) THEN  ! slip vertical bcs for 3 columns of right nodes
+                        !    mbod(bod)%nf(1,i)=0
+                        !END IF
                         IF(g_coord(2,i)<lowbound+cellsize+0.01) THEN
                             mbod(bod)%boundnod(m)=i
                             m=m+1
                         END IF  
+                        
                         !-Global fixities
-                        IF(g_coord(1,i)<cellsize+0.01_iwp)nf(1,i)=0
-                        IF(g_coord(1,i)<0.01_iwp)nf(:,i)=0
-                        IF(g_coord(2,i)<lowbound+0.01+cellsize)nf(:,i)=0  
+                        IF(g_coord(1,i)<cellsize+0.01_iwp)nf(1,i)=0         ! not sure why there is global nf defined here 
+                        IF(g_coord(1,i)<0.01_iwp)nf(:,i)=0                  ! but formnf only form the mbod(bod)%nf 
+                        IF(g_coord(2,i)<lowbound+0.01+cellsize)nf(:,i)=0    ! 
                     END DO
                 END IF
 
@@ -1680,6 +1786,7 @@ time_steps: DO w=1,10000000
                     mbod(bod)%kinup_d1x1,mbod(bod)%x1_orig,mbod(bod)%f_fint,    &
                     mbod(bod)%vel_change,mbod(bod)%x1_ini,mbod(bod)%x1_change,  &
                     mbod(bod)%f_earth,mbod(bod)%kinup_Ground_d2x1,              &
+                    mbod(bod)%ff_force,mbod(bod)%kinup_freefield_x1,            & ! freefield
                     mbod(bod)%cdamp,mbod(bod)%mvkv                              &
                 )
 
@@ -1710,6 +1817,8 @@ time_steps: DO w=1,10000000
                     mbod(bod)%x1_change(0:mbod(bod)%neq),                       &
                     mbod(bod)%f_earth(0:mbod(bod)%neq),                         &
                     mbod(bod)%kinup_Ground_d2x1(0:mbod(bod)%neq),               &
+                    mbod(bod)%ff_force(0:mbod(bod)%neq),                        & ! freefield
+                    mbod(bod)%kinup_freefield_x1(0:mbod(bod)%neq),              & ! freefield
                     mbod(bod)%cdamp(0:mbod(bod)%neq),                           &
                     mbod(bod)%mvkv(0:mbod(bod)%neq)                             &
                 )

@@ -938,10 +938,10 @@ SUBROUTINE GIMP_nodsup(s,g_num,nip,g_coord,gm_coord,lp_mp,mpoints,valuesg,gimpto
     m=0
     j=1
     valuesg(s)=0
-    iel=a_ele(s)
-    neig=neighb(iel,1)
-    nod=g_num(2,neig)
-    mainnod=g_num(2,neig)
+    iel=a_ele(s)        ! obtain particle residing cell
+    neig=neighb(iel,1)  ! obatain cell id of the neighbours
+    nod=g_num(2,neig)   ! 
+    mainnod=g_num(2,neig) ! 
     valuesg(s)=0
 
     DO WHILE(m<16) !-Maximum number of nodes inside the support domain of a particle
@@ -1006,7 +1006,7 @@ SUBROUTINE paraview2(input,realisation,argv,g_coord,g_num,nf,nels,nod,nn,nlen,  
     write(cnumber1,'(i8.6)') realisation
     ss=15
     !open(ss,FILE = argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.vtk')
-    OPEN(ss,FILE="Output/MPM/Paraview2_2/"//argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.vtk')
+    OPEN(ss,FILE="Output/Paraview2_2/"//argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.vtk')
     WRITE(ss,'(a)')'# vtk DataFile Version 3.0'
     WRITE(ss,'(a)')"vtk output"
     WRITE(ss,'(a)')"ASCII"

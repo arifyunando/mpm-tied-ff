@@ -399,7 +399,7 @@ SUBROUTINE point_viz2(input,realisation,argv,gm_coord,m_stress,m_stress_ini,evpt
     write(cnumber,'(i8.6)') ss
     write(cnumber1,'(i8.6)') realisation
     ss=15
-    OPEN(ss,FILE="Output/MPM/Paraview2/"//argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.inp') ! Creates a file with title argv_cnumber1_cnumber
+    OPEN(ss,FILE="Output/Paraview2/"//argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.inp') ! Creates a file with title argv_cnumber1_cnumber
     write(ss,*) '#'
     write(ss,*) '# Simple AVS UCD File'
     write(ss,*) '#'
