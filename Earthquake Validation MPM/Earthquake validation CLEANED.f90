@@ -1258,7 +1258,7 @@ PROGRAM Implicit_MPM_eartquake
   DO bod=1,size(mbod)
     IF(mbod(bod)%nmps>1)THEN 
       IF(cont2/printval*printval==cont2)THEN
-        PRINT '("Steps :" (I10) "/" (I10))', step, 100000
+        PRINT '("Steps :" (I10) "/" (I10))', step, 10000
         mbod(bod)%m_stress_change=mbod(bod)%m_stress-mbod(bod)%m_stress_ini
         CALL paraview2(cont2,1,argv,g_coord,g_num,mbod(bod)%nf,nels,nod,nn,nlen,        &
           mbod(bod)%diag,(-1.0)*mbod(bod)%ddylds,mbod(bod)%d1x1,mbod(bod)%kinup_d2x1,   &
