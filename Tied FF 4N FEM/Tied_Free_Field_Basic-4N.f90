@@ -159,22 +159,39 @@ PROGRAM Tied_Free_Field_Basic
     argv='Results'
     OPEN(10,FILE='Input/Datafound.dat',status='old')
     OPEN(300,FILE='Input/Groundacc.dat',status='old')
-    OPEN(800,FILE='Output/FEM/mpcoord'//'.txt')
-    OPEN(11,FILE='Output/FEM/'//argv(1:nlen)//'.txt')
+    OPEN(800,FILE='Output/mpcoord'//'.txt')
+    OPEN(910,FILE='Output/displacement1'//'.txt')
+    OPEN(920,FILE='Output/displacement2'//'.txt')
+    OPEN(11,FILE='Output/'//argv(1:nlen)//'.txt')
 
     !--First the variables of the centre body (bod=1) is read
-    ! These variables are related to the geometry of the body
-    READ(10,*)mbod(1)%name,mbod(1)%slopeopt,mbod(1)%w1,mbod(1)%h1,mbod(1)%s1,   &
-    mbod(1)%w2,mbod(1)%h2,mbod(1)%nex,mbod(1)%ney,mbod(1)%nx2,mbod(1)%ny2,      &
-    mbod(1)%np_types
-
+     !These variables are related to the geometry of the body
+    READ(10,*) mbod(1)%name,                                                    & ! Block
+      mbod(1)%slopeopt,mbod(1)%w1,mbod(1)%h1,mbod(1)%s1,mbod(1)%w2,mbod(1)%h2,  & ! 2  4.0  10.0  0.0  0.0  0.0
+      mbod(1)%nex,mbod(1)%ney,mbod(1)%nx2,mbod(1)%ny2,                          & ! 4  10   0     0
+      mbod(1)%np_types                                                            ! 1 
+    
+    !! INPUT AREA
+    !mbod(1)%name = 'Block'
+    !mbod(1)%slopeopt = 2
+    !mbod(1)%w1 = 4.0
+    !mbod(1)%h1 = 10.0
+    !mbod(1)%s1 = 0.0
+    !mbod(1)%w2 = 0.0
+    !mbod(1)%h2 = 0.0
+    !mbod(1)%nex = 4
+    !mbod(1)%ney = 10
+    !mbod(1)%nx2 = 0
+    !mbod(1)%ny2 = 0 
+    !mbod(1)%np_types = 1    
+          
     mbod(1)%nx1=mbod(1)%nex
     mbod(1)%ny1=mbod(1)%ney
     cellsize=mbod(1)%w1/mbod(1)%nx1
     mbod(1)%nprops=5
 
     ALLOCATE(mbod(1)%prop(mbod(1)%nprops,mbod(1)%np_types))
-    READ(10,*)mbod(1)%prop
+    READ(10,*)mbod(1)%prop ! 2.65  2500  0.3  1.0  1.0 
     mbod(1)%ntot=ndof
       
     gravbod1=1
@@ -232,23 +249,23 @@ PROGRAM Tied_Free_Field_Basic
 
     ! Now that nn, nels, and nmps has been defined, allocate all necessary memory (AS)
     count_nodes: DO bod=1,size(mbod)
-        ALLOCATE(                                                               &
-            mbod(bod)%nf(3,mbod(bod)%nn),                                       &
-            mbod(bod)%g_coord(ndim,mbod(bod)%nn),                               &
-            mbod(bod)%dee(nst,nst),mbod(bod)%deeinv(nst,nst),                   &
-            mbod(bod)%tied_nn(mbod(bod)%nn,2),                                  &
-            mbod(bod)%ia_aux(mbod(bod)%skylength),                              &
-            mbod(bod)%ja_aux(mbod(bod)%skylength),                              &
-            mbod(bod)%g_g(mbod(bod)%ntot,mbod(bod)%nels),                       &
-            mbod(bod)%g(mbod(bod)%ntot),                                        &
-            mbod(bod)%g_coord_aux(ndim,mbod(bod)%nn),                           &
-            mbod(bod)%km(mbod(bod)%ntot,mbod(bod)%ntot),                        &
-            mbod(bod)%KGC(mbod(bod)%ntot,mbod(bod)%ntot),                       &
-            mbod(bod)%MMS(mbod(bod)%ntot,mbod(bod)%ntot),                       &
-            mbod(bod)%CCS(mbod(bod)%ntot,mbod(bod)%ntot),                       &
-            mbod(bod)%MOD_MTX(mbod(bod)%ntot,mbod(bod)%ntot)                    &
-        )
-        IF(bod>=1) ALLOCATE(mbod(bod)%g_num(nod,mbod(bod)%nels))
+      ALLOCATE(                                                               &
+        mbod(bod)%g_coord(ndim,mbod(bod)%nn),                               &
+        mbod(bod)%g_coord_aux(ndim,mbod(bod)%nn),                           &
+        mbod(bod)%g_num(nod,mbod(bod)%nels),                                &
+        mbod(bod)%nf(3,mbod(bod)%nn),                                       &
+        mbod(bod)%g_g(mbod(bod)%ntot,mbod(bod)%nels),                       &
+        mbod(bod)%g(mbod(bod)%ntot),                                        &
+        mbod(bod)%dee(nst,nst),mbod(bod)%deeinv(nst,nst),                   &
+        mbod(bod)%tied_nn(mbod(bod)%nn,2),                                  &
+        mbod(bod)%ia_aux(mbod(bod)%skylength),                              &
+        mbod(bod)%ja_aux(mbod(bod)%skylength),                              &
+        mbod(bod)%km(mbod(bod)%ntot,mbod(bod)%ntot),                        &
+        mbod(bod)%KGC(mbod(bod)%ntot,mbod(bod)%ntot),                       &
+        mbod(bod)%MMS(mbod(bod)%ntot,mbod(bod)%ntot),                       &
+        mbod(bod)%CCS(mbod(bod)%ntot,mbod(bod)%ntot),                       &
+        mbod(bod)%MOD_MTX(mbod(bod)%ntot,mbod(bod)%ntot)                    &
+      )
     END DO count_nodes
        
     ! These allocations are for variables that are not unique to the body but
@@ -302,19 +319,19 @@ PROGRAM Tied_Free_Field_Basic
             ! For every element, get the node coordinates and node number
             ! Then, saved it to the structure variable 
             elements_2D: DO iel=1,mbod(bod)%nels
-                    !- coordenates and numbering main body   
-                    Call emb_2d_geom_4n(                                        &
-                        iel,mbod(bod)%nx1,                                      &
-                        mbod(bod)%nx2,                                          &
-                        mbod(bod)%ny1,                                          &
-                        mbod(bod)%ny2,                                          &
-                        mbod(bod)%w1,                                           &
-                        mbod(bod)%s1,                                           &
-                        mbod(bod)%w2,                                           &
-                        mbod(bod)%h1,                                           &
-                        mbod(bod)%h2,                                           &
-                        coord,num                                              &
-                    )
+                  !- coordenates and numbering main body   
+                  Call emb_2d_geom_4n(                                        &
+                      iel,mbod(bod)%nx1,                                      &
+                      mbod(bod)%nx2,                                          &
+                      mbod(bod)%ny1,                                          &
+                      mbod(bod)%ny2,                                          &
+                      mbod(bod)%w1,                                           &
+                      mbod(bod)%s1,                                           &
+                      mbod(bod)%w2,                                           &
+                      mbod(bod)%h1,                                           &
+                      mbod(bod)%h2,                                           &
+                      coord,num                                               &
+                  )
                 mbod(bod)%g_num(:,iel)=num
                 mbod(bod)%g_coord(:,num)=TRANSPOSE(coord)
 
@@ -657,7 +674,7 @@ PROGRAM Tied_Free_Field_Basic
     END DO Body_fixities
 
     !--------------------variables initialisation ------------------------------
-    READ(10,*)dtim,k0,aiters,tol,limit,nsrf
+    READ(10,*)dtim,k0,aiters,tol,limit,nsrf !  0.005  0.50  1  1.0e-8 500  100 
 
     !--- Global initial conditions ---
     d1x1  = zero
@@ -1495,7 +1512,10 @@ PROGRAM Tied_Free_Field_Basic
                 
                 ! Limit iteration to 30 cycles (AS)
                 IF(iters>30) EXIT 
-              END DO Newton_Rhapson
+            END DO Newton_Rhapson
+            
+            WRITE(910, '(100E)') mbod(2)%x1(1:)
+            WRITE(920, '(100E)') mbod(3)%x1(1:)
 
             ! reset the convergence state for next time step
             newrapconv1=.false.

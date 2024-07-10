@@ -1,9 +1,9 @@
 MODULE FUNCTIONS
   IMPLICIT NONE
   ! Note: Naming Convention for dynamic 2D array saved in fixed array structure
-  !   v_variable = actual value of variable
-  !   n_variable = actual length of each index of the variable
-  !   i_variable = If v_variable is saved as 1D-Array, i_variable indicates
+  !   variable_v = actual value of variable
+  !   variable_n = actual length of each index of the variable
+  !   variable_i = If variable_v is saved as 1D-Array, variable_i indicates
   !                the index where each member array starts
   !   Example:
   !
@@ -11,7 +11,7 @@ MODULE FUNCTIONS
   !      [f, g, h],
   !      [i, j, k, l]]
   !     
-  !      v_variable:
+  !      variable_v:
   !        2D fixed array:
   !          [[a, b, c, d, e]
   !           [f, g, h, 0, 0]
@@ -20,10 +20,10 @@ MODULE FUNCTIONS
   !        1D fixed array:
   !          [a, b, c, d, e, f, g, h, i, j, k, l, 0, 0, 0, 0, 0, 0]
   !
-  !      n_variable:
+  !      variable_n:
   !          [5, 3, 4]
   !     
-  !      i_variable
+  !      variable_i
   !          [1, 6, 9]
   CONTAINS
   
@@ -1715,10 +1715,6 @@ MODULE FUNCTIONS
   END SUBROUTINE GIMP_GET_SUPPORT_ELEMENTS
 
 
-
-
-
-
   SUBROUTINE GIMP_GET_PARTICLE_G(s,g_vector,nf,nodes_v,nodes_n)
     !
     ! Get the steering vector of the nodes within a material point
@@ -2338,30 +2334,6 @@ MODULE FUNCTIONS
 !****************************** UNSORTED & DRAFTS *****************************!
 !                                                                              !
 
-  SUBROUTINE GET_NEIGHBOUR_NODES(nodes,neighbour_id,neighbour_count,g_num)
-    IMPLICIT NONE
-    INTEGER,INTENT(IN)::neighbour_count
-    INTEGER,ALLOCATABLE,INTENT(IN)::g_num(:,:),neighbour_id(:)
-    INTEGER,ALLOCATABLE,INTENT(OUT)::nodes(:)
-    INTEGER,ALLOCATABLE::neigh_nodes(:),tmp_nodes(:)
-    INTEGER::i,j,k,count
-    ALLOCATE(tmp_nodes(30))
-    count=1
-    DO i=1,neighbour_count
-      neigh_nodes=g_num(:,neighbour_id(i))
-      NODE: DO j=1,size(neigh_nodes)
-        DO k=1,count
-          IF ( tmp_nodes(k) == neigh_nodes(j) ) CYCLE NODE
-        END DO
-        tmp_nodes(count)=neigh_nodes(j)
-        count = count + 1
-      END DO NODE
-    END DO
-    count = count - 1
-    ALLOCATE(nodes(count))
-    nodes = tmp_nodes(:count)
-    DEALLOCATE(tmp_nodes)
-  END SUBROUTINE GET_NEIGHBOUR_NODES
 
 !                                                                              !
 !******************************************************************************!

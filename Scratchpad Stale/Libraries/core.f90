@@ -6,7 +6,7 @@ MODULE MPM_CORE
   INTEGER, PARAMETER, PRIVATE::iwp=SELECTED_REAL_KIND(15)
   REAL(iwp), PARAMETER, PRIVATE :: zero=0.0_iwp, one=1.0_iwp, two=2.0_iwp
   
-  TYPE, EXTENDS(mpm_particles)::mpm_body
+  TYPE, EXTENDS(particles)::mpm_body
     !
     ! MPM Particle Base Class
     !
@@ -123,7 +123,6 @@ MODULE MPM_CORE
     ! Loop over all MPs
     DO i_mp=1,this%nmps
       this%mv=zero
-      this%kp=zero
       DO i_element=1,4 ! 4 is th maximum number of supporting element for a particle
         iel = this%member_elements(i_mp,i_element)
         GET_STIFFNESS: IF (iel > 0) THEN

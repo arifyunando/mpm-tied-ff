@@ -5,7 +5,7 @@ contains
 
 
 SUBROUTINE alphavalue2(cohesion,stress_int,stress_ext,alpha_1)
-    USE MPM_MAIN
+    USE MAIN
     IMPLICIT NONE
     INTEGER,PARAMETER::iwp=SELECTED_REAL_KIND(15)
     REAL(iwp),INTENT(IN)::cohesion
@@ -256,7 +256,7 @@ END SUBROUTINE couma
     
 
 subroutine formdlambda(flowf,flowg,dee,deps,a,dlambda)
-    USE MPM_MAIN
+    USE MAIN
     IMPLICIT NONE
     INTEGER,PARAMETER::iwp=SELECTED_REAL_KIND(15)
     REAL(iwp),INTENT(IN)::dee(:,:),deps(:),a,flowf(:),flowg(:)
@@ -323,7 +323,7 @@ SUBROUTINE floc(coord,gm_coord,mpoints,i)
     !
     ! local coordinate of the material points
     !
-    USE MPM_MAIN
+    USE MAIN
     IMPLICIT NONE
     INTEGER,PARAMETER::iwp=SELECTED_REAL_KIND(15)
     REAL(iwp),INTENT(IN)::coord(:,:),gm_coord(:,:)
@@ -375,7 +375,7 @@ END SUBROUTINE floc
 
 
 SUBROUTINE point_viz2(input,realisation,argv,gm_coord,m_stress,m_stress_ini,evpt,a_ins,Devstress,   &
-    mstress,mpyield,cohesion,m_velocity,acc,nmps,nlen)
+    mstress,mpyield,cohesion,m_velocity,acc,nmps,nlen,bod)
     !---- SUBROUTINE used to save visualise outputs to Paraview format ---------------------
 
     IMPLICIT NONE  ! sr,pore,estress, removed from subroutine since not used now
@@ -383,7 +383,7 @@ SUBROUTINE point_viz2(input,realisation,argv,gm_coord,m_stress,m_stress_ini,evpt
     REAL(iwp),INTENT(IN)::gm_coord(:,:),m_stress(:,:),a_ins(:,:),evpt(:),cohesion(:),m_velocity(:,:),   &
     Devstress(:),acc(:,:),m_stress_ini(:,:),mstress(:),mpyield(:)
     INTEGER,INTENT(IN)::input,nmps,nlen
-    integer,intent(in)::realisation
+    integer,intent(in)::realisation,bod
     CHARACTER(*),INTENT(IN)::argv
     INTEGER::i,j,ss
     REAL(iwp):: zero=0.0_iwp
@@ -399,7 +399,13 @@ SUBROUTINE point_viz2(input,realisation,argv,gm_coord,m_stress,m_stress_ini,evpt
     write(cnumber,'(i8.6)') ss
     write(cnumber1,'(i8.6)') realisation
     ss=15
-    OPEN(ss,FILE="Output/MPM/Paraview2/"//argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.inp') ! Creates a file with title argv_cnumber1_cnumber
+    IF(bod==1)THEN
+      OPEN(ss,FILE="Output/Paraview2/"//argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.inp') ! Creates a file with title argv_cnumber1_cnumber
+    ELSE IF(bod==2)THEN
+      OPEN(ss,FILE="Output/Paraview_2DP_1/"//argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.inp') ! Creates a file with title argv_cnumber1_cnumber   
+    ELSE
+      OPEN(ss,FILE="Output/Paraview_2DP_2/"//argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.inp') ! Creates a file with title argv_cnumber1_cnumber   
+    END IF
     write(ss,*) '#'
     write(ss,*) '# Simple AVS UCD File'
     write(ss,*) '#'
@@ -710,7 +716,7 @@ END SUBROUTINE shapefunct
     
 
 SUBROUTINE yieldcorrection(stress,k,ci,gamap1,cp,gamap2,cr,hp,sp,dee,ft)
-    USE MPM_MAIN
+    USE MAIN
     IMPLICIT NONE
     INTEGER,PARAMETER::iwp=SELECTED_REAL_KIND(15)
     REAL(iwp),INTENT(IN)::hp,sp,ci,gamap1,cp,gamap2,cr,dee(:,:)

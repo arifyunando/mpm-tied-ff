@@ -1,4 +1,4 @@
-module mpm_main
+module main
 
     save
 
@@ -1932,4 +1932,4 @@ SUBROUTINE vmflow(stress,dsbar,vmfl)
     RETURN
 END SUBROUTINE vmflow
 
-end module mpm_main
+end module main

@@ -1,4 +1,4 @@
-module mpm_gimp
+module gimp
     
     save
     contains
@@ -990,13 +990,13 @@ END SUBROUTINE Sup_coord
 
 
 SUBROUTINE paraview2(input,realisation,argv,g_coord,g_num,nf,nels,nod,nn,nlen,  &
-    diag,ddylds,d1x1,d2x1,gravlo,loads,normals,fcont,kv,mv,kdiag,vcm,f_fint)
+    diag,ddylds,d1x1,d2x1,gravlo,loads,normals,fcont,kv,mv,kdiag,vcm,f_fint,bod)
 
     IMPLICIT NONE
     INTEGER,PARAMETER::iwp=SELECTED_REAL_KIND(15)
     REAL(iwp),INTENT(IN)::g_coord(:,:),normals(:,:),kv(:),mv(:)
     REAL(iwp),INTENT(IN)::diag(:),ddylds(:),loads(:),gravlo(:),d1x1(:),d2x1(:),fcont(:),vcm(:),f_fint(:)
-    INTEGER,INTENT(IN)::input,nels,nod,nn,nlen,g_num(:,:),nf(:,:),realisation,kdiag(:)
+    INTEGER,INTENT(IN)::input,nels,nod,nn,nlen,g_num(:,:),nf(:,:),realisation,kdiag(:),bod
     CHARACTER(*),INTENT(IN)::argv
     INTEGER::i,iel,ss
     REAL(iwp):: zero=0.0_iwp,dis_vec(2,nn)
@@ -1006,7 +1006,13 @@ SUBROUTINE paraview2(input,realisation,argv,g_coord,g_num,nf,nels,nod,nn,nlen,  
     write(cnumber1,'(i8.6)') realisation
     ss=15
     !open(ss,FILE = argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.vtk')
-    OPEN(ss,FILE="Output/MPM/Paraview2_2/"//argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.vtk')
+    IF(bod==1)THEN
+      OPEN(ss,FILE="Output/FEM/Paraview2_2/"//argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.vtk')
+    ELSE IF(bod==2)THEN
+      OPEN(ss,FILE="Output/FEM/Paraview_2DM_1/"//argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.vtk')
+    ELSE
+      OPEN(ss,FILE="Output/FEM/Paraview_2DM_2/"//argv(1:nlen)//"_"//trim(adjustl(cnumber1))//"_"//trim(adjustl(cnumber))//'.vtk')
+    END IF
     WRITE(ss,'(a)')'# vtk DataFile Version 3.0'
     WRITE(ss,'(a)')"vtk output"
     WRITE(ss,'(a)')"ASCII"
@@ -1112,4 +1118,4 @@ SUBROUTINE paraview2(input,realisation,argv,g_coord,g_num,nf,nels,nod,nn,nlen,  
     RETURN
 END SUBROUTINE paraview2
 
-end module mpm_gimp
+end module gimp

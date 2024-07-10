@@ -1,0 +1,7 @@
+{
+    "fortran.linter.modOutput": "${workspaceFolder}/modules",
+    "fortran.linter.includePaths": [
+        "${workspaceFolder}/modules"
+    ],
+    "editor.tabSize": 2
+}
