@@ -139,6 +139,8 @@ PROGRAM Implicit_MPM_eartquake
   !------------------------ Input and Initialisation ---------------------------
   nlen=7
   argv='Results'
+  OPEN(800,FILE='Output/log_reference.output')
+  
   OPEN(10,FILE='Input/Datafound.dat',status='old')
   OPEN(300,FILE='Input/Groundacc.dat',status='old')
   !** Read body 1 - the slope
@@ -650,7 +652,7 @@ PROGRAM Implicit_MPM_eartquake
 !===============================================================================
 
   step=0
-  time_steps: DO w=1,100000
+  time_steps: DO w=1,100
 
   step=step+1 
 
@@ -971,17 +973,32 @@ PROGRAM Implicit_MPM_eartquake
       END IF
     END DO Force_MA   
    
+    write(800, *) " "
+    write(800, '("Steps :" (I10) "/" (I10))'), iters, w
+    write(800, '(A15, *(E15.2 ))'), "gravlo      : ",mbod(1)%gravlo
+    write(800, '(A15, *(E15.2 ))'), "ddyldsm     : ",mbod(1)%ddylds
+    write(800, '(A15, *(E15.2 ))'), "vcm         : ",mbod(1)%vcm
+    write(800, '(A15, *(E15.2 ))'), "f_earth     : ",mbod(1)%f_earth
+    write(800, '(A15, *(E15.2 ))'), "cdamp       : ",mbod(1)%cdamp
+    write(800, '(A15, *(E15.2 ))'), "kinup_d1x1  : ",mbod(1)%kinup_d1x1
+    write(800, '(A15, *(E15.2 ))'), "kinup_d2x1  : ",mbod(1)%kinup_d2x1
+    write(800, '(A15, *(E15.2 ))'), "ground_d2x1 : ",mbod(1)%kinup_Ground_d2x1
+    write(800, '(A15, *(E15.2 ))'), "d1x1        : ",mbod(1)%d1x1
+    write(800, '(A15, *(E15.2 ))'), "x1          : ",mbod(1)%x1
 
     DISPLACEMENTS: DO bod=1,size(mbod)
       mbod(bod)%loads=zero
       mbod(bod)%loads=mbod(bod)%gravlo-mbod(bod)%ddylds-mbod(bod)%vcm+mbod(bod)%f_earth-mbod(bod)%cdamp
       mbod(bod)%loads(0)=zero 
+      write(800, '(A15, *(E15.2 ))'), "loads       : ",mbod(1)%loads
       CALL spabac(mbod(bod)%kp,mbod(bod)%loads,mbod(bod)%kdiag)  
       mbod(bod)%loads(0)=zero 
       mbod(bod)%x1=mbod(bod)%x1+mbod(bod)%loads
       mbod(bod)%x1(0)=zero
     END DO DISPLACEMENTS
  
+    write(800, '(A15, *(E15.2 ))'), "loads_post   : ",mbod(1)%loads
+    write(800, '(A15, *(E15.2 ))'), "x1_post      : ",mbod(1)%x1
 
     DO bod=1,size(mbod)
       mbod(bod)%kinup_d2x1=(4.0_iwp*mbod(bod)%x1/dtim**2)-(4.0_iwp*mbod(bod)%d1x1/dtim)-mbod(bod)%d2x1 
