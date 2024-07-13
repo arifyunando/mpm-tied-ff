@@ -990,12 +990,12 @@ END SUBROUTINE Sup_coord
 
 
 SUBROUTINE paraview2(input,realisation,argv,g_coord,g_num,nf,nels,nod,nn,nlen,  &
-    diag,ddylds,d1x1,d2x1,gravlo,loads,normals,fcont,kv,mv,kdiag,vcm,f_fint)
+    diag,ddylds,d1x1,d2x1,gravlo,loads,normals,fcont,kv,mv,kdiag,vcm,f_ff)
 
     IMPLICIT NONE
     INTEGER,PARAMETER::iwp=SELECTED_REAL_KIND(15)
     REAL(iwp),INTENT(IN)::g_coord(:,:),normals(:,:),kv(:),mv(:)
-    REAL(iwp),INTENT(IN)::diag(:),ddylds(:),loads(:),gravlo(:),d1x1(:),d2x1(:),fcont(:),vcm(:),f_fint(:)
+    REAL(iwp),INTENT(IN)::diag(:),ddylds(:),loads(:),gravlo(:),d1x1(:),d2x1(:),fcont(:),vcm(:),f_ff(:)
     INTEGER,INTENT(IN)::input,nels,nod,nn,nlen,g_num(:,:),nf(:,:),realisation,kdiag(:)
     CHARACTER(*),INTENT(IN)::argv
     INTEGER::i,iel,ss
@@ -1067,9 +1067,9 @@ SUBROUTINE paraview2(input,realisation,argv,g_coord,g_num,nf,nels,nod,nn,nlen,  
         WRITE(ss,'(3f15.6)')vcm(nf(:,i)+1), zero
     END DO
 
-    WRITE(ss,'(a)')"vectors ffint float "
+    WRITE(ss,'(a)')"vectors f_ff float "
     DO i=1, nn
-        WRITE(ss,'(3f15.6)')f_fint(nf(:,i)+1), zero
+        WRITE(ss,'(3f15.6)')f_ff(nf(:,i)+1), zero
     END DO
 
     WRITE(ss,'(a)')"vectors normals float "

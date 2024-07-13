@@ -16,7 +16,7 @@ PROGRAM Implicit_MPM_eartquake
   INTEGER:: nnz,nnzacum,accval,eqno,substep,tstep,   &
             sstep,v_presc,h_presc
   
-  LOGICAL :: DEBUG=.false.
+  LOGICAL :: DEBUG=.true.
 
   !** Element/mesh properties
   INTEGER:: ndim=2,ndof=8,nels,neq,nip=4,nn,nod=4,                              &
@@ -121,7 +121,7 @@ PROGRAM Implicit_MPM_eartquake
     !Single body field
     REAL(iwp),ALLOCATABLE:: a_field(:,:),ddylds(:),diag(:),d1x1(:),d2x1(:),     &
       eps_m(:,:),eps_1(:,:),eps_2(:,:),fnorm(:),fcont(:),fdamp(:),Freact(:),    &
-      f_fint(:),gravlo(:),kv(:),kp(:),kp_2(:),kinup_d2x1(:),kinup_d1x1(:),      &
+      f_ff(:),gravlo(:),kv(:),kp(:),kp_2(:),kinup_d2x1(:),kinup_d1x1(:),        &
       loads(:),mv(:),m_mvp(:),m_mva(:),m_field(:),m_phi(:),normal(:,:),x1(:),   &
       temp_d1x1(:),temp_d2x1(:),tangent(:,:),v_field(:,:),vcm(:),vel_change(:), &
       x1_orig(:),x1_change(:),x1_ini(:),f_earth(:),kinup_Ground_d2x1(:),cdamp(:),mvkv(:)
@@ -164,6 +164,9 @@ PROGRAM Implicit_MPM_eartquake
   INTEGER,ALLOCATABLE:: sum_vol(:),c_ele(:),m_num(:),a_ele(:),                  &
     k_ele(:),b_ele(:),d_ele(:),dp_ele(:),flag(:),g_s(:)
 
+  INTEGER,ALLOCATABLE::left_penpos_count(:),right_penpos_count(:)
+  REAL(iwp),ALLOCATABLE::left_penpos(:),right_penpos(:)
+  
   REAL(iwp),ALLOCATABLE::ini_volume(:),gm_coord(:,:),m_coord(:,:),              &
     mweights(:),m_mass(:),m_volume(:),ini_density(:),m_stress(:,:),             &
     m_velocity(:,:),a_ins(:,:),nod_stress(:,:),d1x1(:,:),                       &
@@ -246,7 +249,7 @@ PROGRAM Implicit_MPM_eartquake
   !-The plastic loop jis to consider plasticity. ploop = 1 consider plasticity, any other value does not
   ploop=0
   
-  printval = 5
+  printval = 1
   PRINT*, 'Printing results:', printval
   
   Tini=0.0;Tfin=0.0;Tcont=0.0
@@ -607,6 +610,8 @@ PROGRAM Implicit_MPM_eartquake
   ! c_ele(iel)= total of MP inside each element
   ! k_ele(iel)= total of MP in the domain
   ! b_ele(k) = list of elements with MP inside
+  right_boundary = 0
+  left_boundary = MAXINT
   MPM_Flags: DO bod=1,1
     mbod(bod)%d_ele=0
     mbod(bod)%c_ele=0
@@ -619,6 +624,13 @@ PROGRAM Implicit_MPM_eartquake
       ! Determine the element number based on the coordinate and list it in a_ele
       ielloc=(rowy-1.0)*nx1+colx
       mbod(bod)%a_ele(i)=ielloc
+      
+      !*** AS's Thesis
+      ! Check whether element is a boundary element
+      IF(rowy-offset_y <= size(right_boundary))THEN
+        IF(right_boundary(rowy-offset_y) < colx) right_boundary(rowy-offset_y) = colx
+        IF(left_boundary(rowy-offset_y) > colx) left_boundary(rowy-offset_y) = colx
+      END IF
 
       ! Locate local position of material point 'i' in element 'ielloc'
       num=g_num(:,ielloc)
@@ -645,6 +657,17 @@ PROGRAM Implicit_MPM_eartquake
       END DO
     END DO
   END DO MPM_Flags
+  
+  !*** AS's Thesis
+  ! Check boundary element integrity and determine actual element number
+  DO i=1,size(right_boundary)
+    IF( right_boundary(i)<1 ) print *, "corresponding right boundary element", i, "is not found"
+    right_boundary(i) = ((i+offset_y) - 1.0)*nx1 + right_boundary(i)
+  END DO
+  DO i=1,size(left_boundary)
+    IF( left_boundary(i)>MAXINT-1 ) print *, "corresponding left boundary element", i, "is not found"
+    left_boundary(i) = ((i+offset_y) - 1.0)*nx1 + left_boundary(i)
+  END DO
 
   ! This flagging process for FEM relies on the stress points are indexed in the order of element number
   ! Non ordered stress points will BREAK the simulation
@@ -681,6 +704,7 @@ PROGRAM Implicit_MPM_eartquake
       IF(nip==4) mbod(bod)%lp_mp=cellsize/4.0   
       IF(nip==9) mbod(bod)%lp_mp=cellsize/6.0   
       
+      ! mbod(bod)%nf is marked to 1 for active elements in Elem_suport()
       CALL GIMP_activenode(g_num,nip,g_coord,mbod(bod)%gm_coord,mbod(bod)%lp_mp, &
         mbod(bod)%gimptol,neighb,mbod(bod)%a_ele,mbod(bod)%nf,mbod(bod)%GIMP_node_mp)
       CALL Elem_suport(mbod(bod)%c_ele,mbod(bod)%nf,g_num,cellsize,nx1,nip,nels,  &
@@ -720,7 +744,7 @@ PROGRAM Implicit_MPM_eartquake
         mbod(bod)%Freact(0:mbod(bod)%neq),      &
         mbod(bod)%fnorm(0:mbod(bod)%neq),       &
         mbod(bod)%fcont(0:mbod(bod)%neq),       &
-        mbod(bod)%f_fint(0:mbod(bod)%neq),      &
+        mbod(bod)%f_ff(0:mbod(bod)%neq),        &
         mbod(bod)%f_earth(0:mbod(bod)%neq),     &
         mbod(bod)%vcm(0:mbod(bod)%neq),         &
         mbod(bod)%vel_change(0:mbod(bod)%neq),  &
@@ -734,6 +758,14 @@ PROGRAM Implicit_MPM_eartquake
         mbod(bod)%cdamp(0:mbod(bod)%neq),       &
         mbod(bod)%mvkv(0:mbod(bod)%neq))
 
+      !*** AS's Thesis
+      ! allocate penalty position marker
+      ALLOCATE(                               &
+        left_penpos(0:mbod(bod)%neq),         &
+        left_penpos_count(0:mbod(bod)%neq),   &
+        right_penpos(0:mbod(bod)%neq),        &
+        right_penpos_count(0:mbod(bod)%neq))
+      
       ! create global equation numbering g_g
       mbod(bod)%kdiag=zero
       DO iel=1,nels
@@ -828,7 +860,7 @@ PROGRAM Implicit_MPM_eartquake
       mbod(bod)%x1(0:mbod(bod)%neq),                                      &
       mbod(bod)%kinup_d2x1(0:mbod(bod)%neq),                              &
       mbod(bod)%kinup_d1x1(0:mbod(bod)%neq),                              &
-      mbod(bod)%f_fint(0:mbod(bod)%neq),                                  &
+      mbod(bod)%f_ff(0:mbod(bod)%neq),                                  &
       mbod(bod)%P_ext(0:mbod(bod)%neq),                                   &
       mbod(bod)%cdamp(0:mbod(bod)%neq),                                   &
       mbod(bod)%ground_loads(0:mbod(bod)%neq),                            &
@@ -1030,7 +1062,7 @@ PROGRAM Implicit_MPM_eartquake
       CALL paraview2(cont2,bod,argv,g_coord,g_num,mbod(bod)%nf,nels,nod,nn,nlen,                    &
         mbod(bod)%diag,mbod(bod)%ddylds,mbod(bod)%d1x1,mbod(bod)%d2x1,                              &
         mbod(bod)%gravlo,mbod(bod)%loads,mbod(bod)%normal,mbod(bod)%fcont,mbod(bod)%kv,mbod(bod)%mv,&
-        mbod(bod)%kdiag,mbod(bod)%vcm,mbod(bod)%f_fint)     
+        mbod(bod)%kdiag,mbod(bod)%vcm,mbod(bod)%f_ff)     
     ElSE
         CALL paraview(                                              &
             cont2,                                                  &
@@ -1129,7 +1161,7 @@ PROGRAM Implicit_MPM_eartquake
     mbod(bod)%normal     = zero
     mbod(bod)%temp_d1x1  = zero
     mbod(bod)%temp_d2x1  = zero
-    mbod(bod)%f_fint     = zero
+    mbod(bod)%f_ff       = zero
     mbod(bod)%fcont      = zero
     mbod(bod)%fnorm      = zero
     mbod(bod)%eps_m      = zero
@@ -1155,6 +1187,10 @@ PROGRAM Implicit_MPM_eartquake
     mbod(bod)%penpos_v   = 0
     mbod(bod)%eq_pen     = 0
     mbod(bod)%eq_pen_v   = 0
+    right_penpos         = zero
+    right_penpos_count   = 0
+    left_penpos          = zero
+    left_penpos_count    = 0
   END DO Reset_Variables
   
   ! Calculate diagonal mass matrix (diag)
@@ -1448,11 +1484,6 @@ PROGRAM Implicit_MPM_eartquake
       mbod(bod)%kp=4.0_iwp*mbod(bod)%mv/dtim**2.0_iwp + 2.0_iwp*fm*mbod(bod)%mv/dtim + 2.0_iwp*fk*mbod(bod)%kv/dtim + mbod(bod)%kv
       CALL sparin(mbod(bod)%kp,mbod(bod)%kdiag)
     END IF
-  
-    !*** AS's THESIS
-    ! Apply penalty position for boundary element nodes [TODO]
-    
-    
   END DO Combined_Stiffness
 
 
@@ -1835,10 +1866,38 @@ PROGRAM Implicit_MPM_eartquake
     IF(iters>30) EXIT 
   END DO FF_Newton_Rhapson
 
-  
-  !--- Determine freefield boundaries displacement [TODO!!]
-  
-  
+  !*** AS's Thesis
+  !--- Determine freefield boundaries displacement
+  CALL get_ff_displacement(         &
+    mpm_disp=left_penpos,           &
+    mpm_counter=left_penpos_count,  &
+    mpm_bc_elements=left_boundary,  &
+    mpm_g_num=g_num,                &
+    mpm_nf=mbod(1)%nf,              &
+    ff_disp=mbod(2)%x1,             &
+    ff_g_num=mbod(2)%g_num,         &
+    ff_nf=mbod(2)%nf                &
+  )
+  CALL get_ff_displacement(         &
+    mpm_disp=right_penpos,          &
+    mpm_counter=right_penpos_count, &
+    mpm_bc_elements=right_boundary, &
+    mpm_g_num=g_num,                &
+    mpm_nf=mbod(1)%nf,              &
+    ff_disp=mbod(3)%x1,             &
+    ff_g_num=mbod(3)%g_num,         &
+    ff_nf=mbod(3)%nf                &
+  )
+  !--- Apply penalty to modified stiffness matrix (kp) and form boundary force
+  DO i=1,mbod(1)%neq
+    IF(left_penpos_count(i) > 0)THEN
+      mbod(1)%kp(mbod(1)%kdiag(i)) = mbod(1)%kp(mbod(1)%kdiag(i)) + penalty
+      mbod(1)%f_ff(i) = left_penpos(i) * mbod(1)%kp(mbod(1)%kdiag(i))
+    ELSE IF(right_penpos_count(i) > 0)THEN
+      mbod(1)%kp(mbod(1)%kdiag(i)) = mbod(1)%kp(mbod(1)%kdiag(i)) + penalty
+      mbod(1)%f_ff(i) = right_penpos(i) * mbod(1)%kp(mbod(1)%kdiag(i))
+    END IF
+  END DO
   
   !--- Solve main MPM body stresses and displacement levels
   iters=0; iters2=0
@@ -1966,13 +2025,15 @@ PROGRAM Implicit_MPM_eartquake
     IF(DEBUG) write(800, '((A15":"), *(E15.5 ","))'), '"ddylds"',mbod(1)%ddylds
     
   
-    ! calculate f_earth = mv x kinup_Ground_d2x1
-    MPM_Ground_F: DO bod=1,1
-      IF(mbod(bod)%nmps>1)THEN 
-        CALL linmul_sky(mbod(bod)%mv,mbod(bod)%kinup_Ground_d2x1,mbod(bod)%f_earth,mbod(bod)%kdiag)  !--Multiplication of the mass matrix per the acceleration vector vcm=Ma 
-        mbod(bod)%f_earth(0)=zero
-      END IF
-    END DO MPM_Ground_F 
+    !! calculate f_earth = mv x kinup_Ground_d2x1
+    !MPM_Ground_F: DO bod=1,1
+    !  IF(mbod(bod)%nmps>1)THEN 
+    !    CALL linmul_sky(mbod(bod)%mv,mbod(bod)%kinup_Ground_d2x1,mbod(bod)%f_earth,mbod(bod)%kdiag)  !--Multiplication of the mass matrix per the acceleration vector vcm=Ma 
+    !    mbod(bod)%f_earth(0)=zero
+    !  END IF
+    !END DO MPM_Ground_F 
+    
+    mbod(bod)%f_earth=zero
     IF(DEBUG) write(800, '((A15":"), *(E15.5 ","))'), '"f_earth"',mbod(1)%f_earth
 
 
@@ -2002,6 +2063,8 @@ PROGRAM Implicit_MPM_eartquake
     
     IF(DEBUG) write(800, '((A15":"), *(E15.5 ","))'), '"gravlo"',mbod(1)%gravlo
     
+    ! free field loading
+    IF(DEBUG) write(800, '((A15":"), *(E15.5 ","))'), '"f_ff"',mbod(1)%f_ff
     
     !---------------------------------------------------------------------------AS
     ! Solve the equations
@@ -2009,7 +2072,8 @@ PROGRAM Implicit_MPM_eartquake
 
     MPM_DISPLACEMENTS: DO bod=1,1
       mbod(bod)%loads=zero
-      mbod(bod)%loads=mbod(bod)%gravlo-mbod(bod)%ddylds-mbod(bod)%vcm+mbod(bod)%f_earth-mbod(bod)%cdamp
+      mbod(bod)%loads=mbod(bod)%gravlo-mbod(bod)%ddylds-mbod(bod)%vcm-mbod(bod)%cdamp+    &
+                      mbod(bod)%f_earth+mbod(bod)%f_ff
       mbod(bod)%loads(0)=zero 
       IF(DEBUG) write(800, '((A15":"), *(E15.5 ","))'), '"loads"',mbod(1)%loads
       
@@ -2410,7 +2474,7 @@ PROGRAM Implicit_MPM_eartquake
             CALL paraview2(cont2,bod,argv,g_coord,g_num,mbod(bod)%nf,nels,nod,nn,nlen,                    &
               mbod(bod)%diag,mbod(bod)%ddylds,mbod(bod)%d1x1,mbod(bod)%d2x1,                              &
               mbod(bod)%gravlo,mbod(bod)%loads,mbod(bod)%normal,mbod(bod)%fcont,mbod(bod)%kv,mbod(bod)%mv,&
-              mbod(bod)%kdiag,mbod(bod)%vcm,mbod(bod)%f_fint)     
+              mbod(bod)%kdiag,mbod(bod)%vcm,mbod(bod)%f_ff)     
           ElSE
               CALL paraview(                                              &
                   cont2,                                                  &
@@ -2585,7 +2649,7 @@ PROGRAM Implicit_MPM_eartquake
         mbod(bod)%fdamp,mbod(bod)%Freact,mbod(bod)%temp_d2x1,                 &
         mbod(bod)%fnorm,mbod(bod)%fcont,mbod(bod)%temp_d1x1,mbod(bod)%kdiag,  &
         mbod(bod)%vcm,mbod(bod)%x1,mbod(bod)%kinup_d2x1,mbod(bod)%kinup_d1x1, &
-        mbod(bod)%x1_orig,mbod(bod)%f_fint,                                   &
+        mbod(bod)%x1_orig,mbod(bod)%f_ff,                                     &
         mbod(bod)%vel_change,mbod(bod)%x1_ini,                                &
         mbod(bod)%x1_change,mbod(bod)%f_earth,mbod(bod)%kinup_Ground_d2x1,    &
         mbod(bod)%cdamp,mbod(bod)%mvkv)
@@ -2601,11 +2665,20 @@ PROGRAM Implicit_MPM_eartquake
         mbod(bod)%x1(0:mbod(bod)%neq),mbod(bod)%kinup_d2x1(0:mbod(bod)%neq),    &
         mbod(bod)%kinup_d1x1(0:mbod(bod)%neq),                                  &
         mbod(bod)%x1_orig(0:mbod(bod)%neq),                                     &
-        mbod(bod)%f_fint(0:mbod(bod)%neq),                                      &
+        mbod(bod)%f_ff(0:mbod(bod)%neq),                                        &
         mbod(bod)%vel_change(0:mbod(bod)%neq),                                  & 
         mbod(bod)%x1_ini(0:mbod(bod)%neq),mbod(bod)%x1_change(0:mbod(bod)%neq), &
         mbod(bod)%f_earth(0:mbod(bod)%neq),mbod(bod)%kinup_Ground_d2x1(0:mbod(bod)%neq), &
         mbod(bod)%cdamp(0:mbod(bod)%neq),mbod(bod)%mvkv(0:mbod(bod)%neq))
+      
+      !*** AS's Thesis
+      ! allocate penalty position marker
+      DEALLOCATE(left_penpos,left_penpos_count,right_penpos,right_penpos_count)
+      ALLOCATE(                               &
+        left_penpos(0:mbod(bod)%neq),         &
+        left_penpos_count(0:mbod(bod)%neq),   &
+        right_penpos(0:mbod(bod)%neq),        &
+        right_penpos_count(0:mbod(bod)%neq))
     
       !-------------------------------------------------------------------------AS
       ! Determine the shape and reallocate the skyline sparse matrix

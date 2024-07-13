@@ -1,6 +1,6 @@
-module fem
-  save
-contains
+MODULE fem
+  SAVE
+CONTAINS
   SUBROUTINE ecmat2(ecm,fun,ndof,nodof)
     !
     ! This subroutine forms the element consistent mass matrix.
@@ -261,9 +261,8 @@ contains
     close(ss)
     RETURN
     END SUBROUTINE paraview
-  
     
-    SUBROUTINE point_viz(input,realisation,argv,gm_coord,m_stress,m_eps_acum,evpt,a_ins,Devstress,   &
+  SUBROUTINE point_viz(input,realisation,argv,gm_coord,m_stress,m_eps_acum,evpt,a_ins,Devstress,   &
     mstress,mpyield,cohesion,m_velocity,acc,nmps,nlen,bod)
     !---- SUBROUTINE used to save visualise outputs to Paraview format ---------------------
 
@@ -339,4 +338,38 @@ contains
     RETURN
     END SUBROUTINE point_viz  
   
-end module fem
+  SUBROUTINE get_ff_displacement(mpm_disp, mpm_counter, mpm_bc_elements, mpm_g_num, mpm_nf, ff_disp, ff_g_num, ff_nf)
+    IMPLICIT NONE
+    INTEGER,PARAMETER::iwp=SELECTED_REAL_KIND(15)
+    REAL(iwp),INTENT(OUT)::mpm_disp(0:)
+    INTEGER,INTENT(OUT)::mpm_counter(0:)
+    REAL(iwp),INTENT(IN)::ff_disp(0:)
+    INTEGER,INTENT(IN)::mpm_bc_elements(:),mpm_g_num(:,:),ff_g_num(:,:),mpm_nf(:,:),ff_nf(:,:)
+    
+    INTEGER::i, iel_bc_mpm, iel_bc_ff
+    INTEGER,ALLOCATABLE::g_mp(:), g_ff(:)
+    mpm_disp = 0.0_iwp
+    mpm_counter = 0
+    DO i=1,size(mpm_bc_elements)
+      ! get boundary element index in ff & mpm
+      iel_bc_mpm = mpm_bc_elements(i)
+      iel_bc_ff  = i*2             ! 2 column for each row
+    
+      ! get g in mpm & ff from element number
+      g_mp = mpm_nf(1,mpm_g_num(:,iel_bc_mpm))
+      g_ff = ff_nf(1,ff_g_num(:,iel_bc_ff))
+    
+      ! take displacement with from ff to mpm and add counter
+      mpm_disp(g_mp) = mpm_disp(g_mp) + ff_disp(g_ff)
+      mpm_counter(g_mp) = mpm_counter(g_mp) + 1
+    END DO
+    ! cleanup memory
+    mpm_disp(0)=0.0_iwp; mpm_counter(0)=0
+    
+    ! normalize displacement
+    DO i=0, size(mpm_disp)-1
+      IF(mpm_counter(i) > 0) mpm_disp(i) = mpm_disp(i) / mpm_counter(i)
+    END DO
+    mpm_disp(0)=0.0_iwp; mpm_counter(0)=0
+  END SUBROUTINE
+END MODULE fem
