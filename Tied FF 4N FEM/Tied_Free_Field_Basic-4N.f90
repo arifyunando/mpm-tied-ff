@@ -836,7 +836,7 @@ PROGRAM Tied_Free_Field_Basic
                         ecm(m,:)=zero
                         ecm(m,m)=ecm_acum(m,m)
                     END DO
-                    mm_s=mm_s+ecm*mbod(bod)%m_dens(k)*det*weights(i)
+                    mm_s = mm_s+ecm*mbod(bod)%m_dens(k)*det*weights(i)
                 
                     ! accummulate all the diagonal mass matrix from all the elements
                     ! into mbod(bod)%diag
