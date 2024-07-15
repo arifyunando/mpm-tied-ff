@@ -401,10 +401,6 @@ PROGRAM Implicit_MPM_eartquake
       
     !- Allocate additional MP state variables    
     ALLOCATE(                                        &
-      mbod(bod)%m_stress_change(nst,mbod(bod)%nmps), &
-      mbod(bod)%m_stress_prev(nst,mbod(bod)%nmps),   &
-      mbod(bod)%eps_m(nst,mbod(bod)%nmps),           &
-      mbod(bod)%eps_1(nst,mbod(bod)%nmps),           &
       mbod(bod)%eps_2(nst,mbod(bod)%nmps)            &
     )
         
@@ -566,7 +562,6 @@ PROGRAM Implicit_MPM_eartquake
     ALLOCATE(mbod(bod)%a_field(0:nn,ndim))  
     ALLOCATE(mbod(bod)%m_field(0:nn))       
     ALLOCATE(mbod(bod)%g_matrix(ndim))      
-    ALLOCATE(mbod(bod)%normal(nodof,nn))    
     ALLOCATE(mbod(bod)%tangent(nodof,nn))   
     ALLOCATE(mbod(bod)%boundnod(nn))        
     ALLOCATE(mbod(bod)%base_nn(nn))
@@ -878,7 +873,7 @@ PROGRAM Implicit_MPM_eartquake
   ! Define gravity field
   Gravf=10.00_iwp
   k0=0.50_iwp
-  g_matrix=(/0.0,-0.00/)  !--Gravity acting in the vertical direction
+  g_matrix=(/0.0,-10.0_iwp/)  !--Gravity acting in the vertical direction
   DO bod=1,size(mbod)
     mbod(bod)%g_matrix=(/0.0,-10.0/)
   END DO
@@ -902,12 +897,7 @@ PROGRAM Implicit_MPM_eartquake
   initial_conditions: DO bod=1,size(mbod)
     ! Stresses
     mbod(bod)%m_stress      = zero
-    mbod(bod)%m_stress_efe  = zero
-    mbod(bod)%m_pore        = zero
-
     mbod(bod)%m_stress_ini  = zero
-    mbod(bod)%m_stress_prev = zero
-    mbod(bod)%m_stress_change = zero
     
     ! Strains and displacements
     mbod(bod)%x1_acum       = zero
@@ -918,20 +908,26 @@ PROGRAM Implicit_MPM_eartquake
     ! Acceleration and Velocity
     mbod(bod)%m_acc         = zero
     mbod(bod)%m_velocity    = zero
-    
-    ! Unknown, unused, or auxiliaries variables
-    mbod(bod)%c_fact        = zero
-    mbod(bod)%P_ext         = zero
-    mbod(bod)%Cc            = zero
-    mbod(bod)%statev        = zero
-    mbod(bod)%statev(:,7)   = props(16)    
-    mbod(bod)%statev(:,13)  = 1.0_iwp
-    mbod(bod)%statev(:,52)  = zero
-    mbod(bod)%d1p1          = zero
   END DO initial_conditions
   
+  !---------------------------------------------------------------------------AS
+  ! Initial stresses (k0 procedure)
+  !---------------------------------------------------------------------------AS
 
-  ! Print to paraview
+  DO bod=1,size(mbod)
+    Ini_stress_loop:DO i=1,mbod(bod)%nmps
+      mbod(bod)%m_stress(2,i) = mbod(bod)%m_dens(i)*10.0_iwp * (mbod(bod)%gm_coord(2,i)-HSURF)
+      mbod(bod)%m_stress(1,i) = mbod(bod)%m_stress(2,i)*k0
+      mbod(bod)%m_stress(3,i) = zero
+      mbod(bod)%m_stress(4,i) = mbod(bod)%m_stress(1,i)
+    END DO Ini_stress_loop
+    mbod(bod)%m_stress_ini = mbod(bod)%m_stress
+  END DO
+
+  !---------------------------------------------------------------------------AS
+  ! Initial Configuration (print to paraview)
+  !---------------------------------------------------------------------------AS
+
   DO bod=1,size(mbod)
     IF(bod==1)THEN 
       CALL IO_PARAVIEW(                     &
@@ -1098,27 +1094,12 @@ PROGRAM Implicit_MPM_eartquake
     mbod(bod)%GIMP_nodes = zero
     
     ! additional variables (unused)
-    mbod(bod)%loads_end  = zero
-    mbod(bod)%loads_base = zero
-    mbod(bod)%x1_ini     = zero
-    mbod(bod)%x1_change  = zero
-    mbod(bod)%normal     = zero
-    mbod(bod)%fcont      = zero
-    mbod(bod)%fnorm      = zero
-    mbod(bod)%eps_m      = zero
-    mbod(bod)%eps_1      = zero
     mbod(bod)%eps_2      = zero
     mbod(bod)%v_field    = zero
     mbod(bod)%m_field    = zero
     mbod(bod)%a_field    = zero
     mbod(bod)%vel_change = zero
-    mbod(bod)%penpos     = 0
-    mbod(bod)%penpos_v   = 0
-    mbod(bod)%eq_pen     = 0
-    mbod(bod)%eq_pen_v   = 0
     mbod(bod)%nodecont   = zero
-    mbod(bod)%temp_d1x1  = zero
-    mbod(bod)%temp_d2x1  = zero
   END DO Reset_Variables
   
 
@@ -1618,8 +1599,8 @@ PROGRAM Implicit_MPM_eartquake
     ! Determine Nodal Forces
     !-------------------------------------------------------------------------AS
 
-    ! Calculate internal force (ddylds) from particle stresses (m_stress)
-    DO bod=1,1
+    ! Calculate internal force (ddylds) and gravity load (gravlo) from particle stresses (m_stress)
+    DO bod=1,1 ! MPM Body
       mbod(bod)%ddylds=zero
       DO i=1,mbod(bod)%nmps
         iel=mbod(bod)%a_ele(i)   
@@ -1642,15 +1623,20 @@ PROGRAM Implicit_MPM_eartquake
         derextend=MATMUL(jac,derextend)
         CALL beematgimp(i,beeextend,derextend,values)
 
+        ! Calculate Body Loads (ddylds)
         sigma=mbod(bod)%m_stress(:,i) 
-        mbod(bod)%ddylds(eldddylds)=mbod(bod)%ddylds(eldddylds) + MATMUL(sigma,beeextend) * (4.0*mbod(bod)%lp_mp(1,i)*mbod(bod)%lp_mp(2,i))
+        mbod(bod)%ddylds(eldddylds)=mbod(bod)%ddylds(eldddylds) + MATMUL(sigma,beeextend)*(4.0*mbod(bod)%lp_mp(1,i)*mbod(bod)%lp_mp(2,i))
         mbod(bod)%ddylds(0)=zero 
-                          
+
+        ! Calculate Gravity Loads (gravlo)
+        mbod(bod)%gravlo(eldddylds)=mbod(bod)%gravlo(eldddylds) + mbod(bod)%diag(eldddylds)*(-Gravf)  
+        mbod(bod)%gravlo(0)=zero
+
         DEALLOCATE(derextend,funextend2,eldddylds,jac_coord,beeextend)
       END DO
     END DO 
 
-    DO bod=2,size(mbod)
+    DO bod=2,size(mbod) ! Freefield Bodies
       mbod(bod)%ddylds=zero
       a=1
       CALL sample2(element,points,weights)
@@ -1667,15 +1653,18 @@ PROGRAM Implicit_MPM_eartquake
         deriv=MATMUL(jac,der)
         CALL beemat(bee,deriv)
         
+        ! Calculate Body Loads (ddylds)
         sigma=mbod(bod)%m_stress(:,i) 
         mbod(bod)%ddylds(mbod(bod)%g) = mbod(bod)%ddylds(mbod(bod)%g) + MATMUL(TRANSPOSE(bee),sigma)*det*weights(a)
         mbod(bod)%ddylds(0)=zero 
 
+        ! Calculate Gravity Loads (gravlo)
+        mbod(bod)%gravlo(mbod(bod)%g) = mbod(bod)%gravlo(mbod(bod)%g) + mbod(bod)%diag(mbod(bod)%g)*(-Gravf)  
+        mbod(bod)%gravlo(0)=zero
+
         a=a+1; IF(a>nip)a=1
       END DO
     END DO 
-
-    ! Calculate gravity force (gravlo) from gravity field (g)
 
 
     ! calculate damping force (cdamp; F=cv)
@@ -1748,7 +1737,6 @@ PROGRAM Implicit_MPM_eartquake
       mbod(bod)%loads(0)=zero; mbod(bod)%residual(0)=zero 
 
       mbod(bod)%loads       = mbod(bod)%residual  ! assign displacement to loads (weird indeed)
-      mbod(bod)%loads_base  = mbod(bod)%loads
       mbod(bod)%x1          = mbod(bod)%x1+mbod(bod)%loads ! add displacement increments
       mbod(bod)%x1(0)       = zero
     END DO FF_Displacements
@@ -1895,13 +1883,9 @@ PROGRAM Implicit_MPM_eartquake
             IF(m==1) eps=MATMUL(beeCMPM,eldCMPM)
             IF(m==2) eps_2=MATMUL(beeCMPM,eldCMPM)
 
-            !sigma=MATMUL(mbod(bod)%dee,eps_2)
             IF(m==1) sigma_1=MATMUL(mbod(bod)%dee,eps)
-            !IF(m==2)sigma_2=MATMUL(mbod(bod)%dee,eps_2)
           END DO average
-          !IF(aver==1)sigma=sigma_1
           IF(aver==1) eps=eps
-          !IF(aver==2)sigma=sigma_1*0.5+sigma_2*0.5
           IF(aver==2) eps=0.5_iwp*eps+0.5_iwp*eps_2
           DEALLOCATE(derextend,funCMPM,equations,identidad,beeCMPM,eldCMPM)
         ELSE IF(smethod==2)THEN
