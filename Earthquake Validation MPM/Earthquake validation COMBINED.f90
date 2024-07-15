@@ -423,67 +423,76 @@ PROGRAM Implicit_MPM_eartquake
       mbod(bod)%g_g(:,iel)=g
     END DO
 
-    !- Compute the initial volume of the elements
-    Initialvol: DO iel=1,mbod(bod)%nels
-      num=mbod(bod)%g_num(:,iel)
-      coord=TRANSPOSE(mbod(bod)%g_coord(:,num))
-      mbod(bod)%ini_volume(iel)=cellsize*cellsize
-    END DO Initialvol
+    
+    !-------------------------------------------------------------------------AS
+    ! Allocate Material Points Variables
+    !-------------------------------------------------------------------------AS
 
+    !- ALlocate material points tracers
+    ALLOCATE(                                        &
+      mbod(bod)%gm_coord(ndim,mbod(bod)%nmps),       &
+      mbod(bod)%mpoints(mbod(bod)%nmps,ndim),        &
+      mbod(bod)%a_ele(mbod(bod)%nmps),               &
+      mbod(bod)%b(mbod(bod)%nmps)                    &
+    )
+      
+    !- Allocate material points kinematics
+    ALLOCATE(                                        &
+      mbod(bod)%a_ins(ndim,mbod(bod)%nmps),          &
+      mbod(bod)%ins(ndim,mbod(bod)%nmps),            &
+      mbod(bod)%accp(ndim,mbod(bod)%nmps),           &
+      mbod(bod)%accb(ndim,mbod(bod)%nmps),           &
+      mbod(bod)%vccp(ndim,mbod(bod)%nmps)            &
+    )
+        
     !- Allocate material points state variables
-    IF(bod==1)THEN
-      ALLOCATE(mbod(bod)%gm_coord(ndim,mbod(bod)%nmps),mbod(bod)%m_volume(mbod(bod)%nmps),              &
-        mbod(bod)%mweights(mbod(bod)%nmps),mbod(bod)%m_mass(mbod(bod)%nmps),                            &
-        mbod(bod)%m_stress(nst,mbod(bod)%nmps),mbod(bod)%m_velocity(nodof,mbod(bod)%nmps),              &
-        mbod(bod)%a_ins(ndim,mbod(bod)%nmps),mbod(bod)%flag(mbod(bod)%nmps),                            &
-        mbod(bod)%mpoints(mbod(bod)%nmps,ndim),mbod(bod)%a_ele(mbod(bod)%nmps),                         &
-        mbod(bod)%accp(ndim,mbod(bod)%nmps),mbod(bod)%vccp(ndim,mbod(bod)%nmps),                        &
-        mbod(bod)%ini_density(mbod(bod)%nmps),mbod(bod)%epsinvacum(mbod(bod)%nmps),                     &
-        mbod(bod)%Devstress(mbod(bod)%nmps),mbod(bod)%ins(ndim,mbod(bod)%nmps),                         &
-        mbod(bod)%eps_acum(nst,mbod(bod)%nmps),mbod(bod)%GIMP_nodes(9,mbod(bod)%nmps),                  &
-        mbod(bod)%valuesg(mbod(bod)%nmps),mbod(bod)%m_stress_ini(nst,mbod(bod)%nmps),                   &
-        mbod(bod)%m_stress_change(nst,mbod(bod)%nmps),mbod(bod)%m_acc(nodof,mbod(bod)%nmps),            &
-        mbod(bod)%mpyield(mbod(bod)%nmps),mbod(bod)%b(mbod(bod)%nmps),mbod(bod)%m_dens(mbod(bod)%nmps), &
-        mbod(bod)%mean_stress(mbod(bod)%nmps),mbod(bod)%lp_mp(ndim,mbod(bod)%nmps),                     &
-        mbod(bod)%elemmpoints(mbod(bod)%nmps,4),mbod(bod)%accb(ndim,mbod(bod)%nmps),                    &
-        mbod(bod)%eps_m(nst,mbod(bod)%nmps),mbod(bod)%eps_1(nst,mbod(bod)%nmps),mbod(bod)%eps_2(nst,mbod(bod)%nmps),&
-        mbod(bod)%m_stress_prev(nst,mbod(bod)%nmps),mbod(bod)%mp_dens(mbod(bod)%nmps))
-    ELSE
-      ALLOCATE(                                                             &
-        mbod(bod)%gm_coord(ndim,mbod(bod)%nmps),                            &
-        mbod(bod)%m_volume(mbod(bod)%nmps),                                 &
-        mbod(bod)%m_mass(mbod(bod)%nmps),                                   &
-        mbod(bod)%mweights(mbod(bod)%nmps),                                 &
-        mbod(bod)%statev(mbod(bod)%nmps,100),                               &
-        mbod(bod)%m_stress(nst,mbod(bod)%nmps),                             &
-        mbod(bod)%m_velocity(nodof,mbod(bod)%nmps),                         &
-        mbod(bod)%a_ins(ndim,mbod(bod)%nmps),                               &
-        mbod(bod)%flag(mbod(bod)%nmps),                                     &
-        mbod(bod)%b(mbod(bod)%nmps),                                        &
-        mbod(bod)%mpoints(mbod(bod)%nmps,ndim),                             &
-        mbod(bod)%a_ele(mbod(bod)%nmps),                                    &
-        mbod(bod)%accp(ndim,mbod(bod)%nmps),                                &
-        mbod(bod)%vccp(ndim,mbod(bod)%nmps),                                &
-        mbod(bod)%ini_density(mbod(bod)%nmps),                              &
-        mbod(bod)%m_acc(nodof,mbod(bod)%nmps),                              &
-        mbod(bod)%m_dens(mbod(bod)%nmps),                                   &
-        mbod(bod)%Devstress(mbod(bod)%nmps),                                &
-        mbod(bod)%ins(ndim,mbod(bod)%nmps),                                 &
-        mbod(bod)%eps_acum(nst,mbod(bod)%nmps),                             &
-        mbod(bod)%m_stress_ini(nst,mbod(bod)%nmps),                         &
-        mbod(bod)%mean_stress(mbod(bod)%nmps),                              &
-        mbod(bod)%accb(ndim,mbod(bod)%nmps),                                &
-        mbod(bod)%Cc(2,2),                                                  &
-        mbod(bod)%m_pore(1,mbod(bod)%nmps),                                 &
-        mbod(bod)%m_stress_efe(nst,mbod(bod)%nmps),                         &
-        mbod(bod)%damping(mbod(bod)%nmps),                                  &
-        mbod(bod)%fk(mbod(bod)%nmps),                                       &
-        mbod(bod)%mp_dens(mbod(bod)%nmps)                                   &
-      )
-    END IF
-    ALLOCATE(mbod(bod)%mpcp(mbod(bod)%nmps))
+    ALLOCATE(                                        &
+      mbod(bod)%ini_density(mbod(bod)%nmps),         &
+      mbod(bod)%m_dens(mbod(bod)%nmps),              &
+      mbod(bod)%mp_dens(mbod(bod)%nmps),             &
+      mbod(bod)%m_volume(mbod(bod)%nmps),            &
+      mbod(bod)%m_velocity(nodof,mbod(bod)%nmps),    &
+      mbod(bod)%m_mass(mbod(bod)%nmps),              &
+      mbod(bod)%m_stress(nst,mbod(bod)%nmps),        &
+      mbod(bod)%m_acc(nodof,mbod(bod)%nmps),         &
+      mbod(bod)%m_stress_ini(nst,mbod(bod)%nmps),    &
+      mbod(bod)%eps_acum(nst,mbod(bod)%nmps),        &
+      mbod(bod)%epsinvacum(mbod(bod)%nmps)           &
+    )
+      
+    !- Allocate additional MP state variables    
+    ALLOCATE(                                        &
+      mbod(bod)%m_stress_change(nst,mbod(bod)%nmps), &
+      mbod(bod)%m_stress_prev(nst,mbod(bod)%nmps),   &
+      mbod(bod)%eps_m(nst,mbod(bod)%nmps),           &
+      mbod(bod)%eps_1(nst,mbod(bod)%nmps),           &
+      mbod(bod)%eps_2(nst,mbod(bod)%nmps)            &
+    )
+        
+    !- Allocate variables for yield functions
+    ALLOCATE(                                        &
+      mbod(bod)%flag(mbod(bod)%nmps),                &
+      mbod(bod)%Devstress(mbod(bod)%nmps),           &
+      mbod(bod)%mean_stress(mbod(bod)%nmps),         &
+      mbod(bod)%mpyield(mbod(bod)%nmps)              &
+    )
     
+    ALLOCATE(                                        &
+      mbod(bod)%m_pore(1,mbod(bod)%nmps),            &
+      mbod(bod)%m_stress_efe(nst,mbod(bod)%nmps),    &
+      mbod(bod)%statev(mbod(bod)%nmps,100),          &
+      mbod(bod)%mpcp(mbod(bod)%nmps)                 &
+    )
     
+    !- Allocate GIMP variables
+    ALLOCATE(                                        &
+      mbod(bod)%lp_mp(ndim,mbod(bod)%nmps),          &
+      mbod(bod)%valuesg(mbod(bod)%nmps),             &
+      mbod(bod)%GIMP_nodes(9,mbod(bod)%nmps),        & ! maximum number of affected NODES under a particle is 9
+      mbod(bod)%elemmpoints(mbod(bod)%nmps,4)        & ! maximum number of affected CELLS under a particle is 4
+    )
+    
+      
     !-------------------------------------------------------------------------AS
     ! Insert Material Points / Stress Points
     !-------------------------------------------------------------------------AS
@@ -511,7 +520,6 @@ PROGRAM Implicit_MPM_eartquake
       END DO
       m_num=mbod(bod)%MPPE
       mbod(bod)%gm_coord(:,m_num)=TRANSPOSE(m_coord)
-      mbod(bod)%mweights(m_num)=weights
       mbod(bod)%a_ele(m_num)=iel
       mbod(bod)%c_ele(iel)=mbod(bod)%emps
       DO j=1,nip
@@ -519,16 +527,23 @@ PROGRAM Implicit_MPM_eartquake
       END DO
     END DO InsertMP
 
+    
     !-------------------------------------------------------------------------AS
-    ! Calculate initial volume and mass of each MPs (not elements)
+    ! Calculate initial volume, density and mass of each MPs
     !-------------------------------------------------------------------------AS
+    
+    !- Compute the initial volume of the CELLS
+    Initialvol: DO iel=1,mbod(bod)%nels
+      num=mbod(bod)%g_num(:,iel)
+      coord=TRANSPOSE(mbod(bod)%g_coord(:,num))
+      mbod(bod)%ini_volume(iel)=cellsize*cellsize
+    END DO Initialvol
+    
+    !- Compute the intiial volume of the PARTICLES & density & mass 
     k=1
     DO i=1,mbod(bod)%nmps
+      ! Calculate m_volume using Gaussian Weights (FEM) or Cell Volume (MPM)
       iel=mbod(bod)%a_ele(i)
-      mbod(bod)%ini_density(i)=mbod(bod)%prop(1,1)
-      mbod(bod)%mp_dens(i)=(mbod(bod)%prop(1,1)+0.75)/(1.75) !- rho=(Gs+e)/(1+e); Note that this equation consider a void ratio (e) of 0.75, this must be changed 
-      
-      ! Calculate MP volume using Gauss Weights (FEM) or Cell Volume (MPM)
       IF(bod==1)THEN
         mbod(bod)%m_volume(i)=mbod(bod)%ini_volume(iel)/mbod(bod)%emps 
       ELSE
@@ -539,12 +554,15 @@ PROGRAM Implicit_MPM_eartquake
         k=k+1; IF(k>nip) k=1
       END IF
       
+      mbod(bod)%ini_density(i)=mbod(bod)%prop(1,1)
+      mbod(bod)%mp_dens(i)=(mbod(bod)%prop(1,1)+0.75)/(1.75) !- rho=(Gs+e)/(1+e); Note that this equation assume a void ratio (e) of 0.75, this must be changed 
       mbod(bod)%m_mass(i)=mbod(bod)%mp_dens(i)*mbod(bod)%m_volume(i)
     END DO
     
-    mbod(bod)%m_dens(i)=mbod(bod)%mp_dens(i) !- For some reasons, the freefield use m_dens instead mp_dens
+    mbod(bod)%m_dens=mbod(bod)%mp_dens !- For some reasons, the freefield use m_dens instead mp_dens
   END DO Mesh_create
 
+  
   !===================================================================================
   ! ---------------------------- NEW BACKGROUND GRID ---------------------------------
   ! --The new grid must cover all the space considering the deformation of the body---
@@ -836,11 +854,15 @@ PROGRAM Implicit_MPM_eartquake
     !-----------------------------------------------------------------------
     ! Setup Tied Nodes Boundary Conditions
     mbod(bod)%tied_nn=0
-    j=1
+    j=1;k=1
     DO i=1,mbod(bod)%nn
-      IF(mbod(bod)%g_coord(1,i)<leftbound+0.01_iwp) mbod(bod)%tied_nn(j,1)=i  ! Mark left nodes
-      IF(mbod(bod)%g_coord(1,i)>rightbound-0.01_iwp) mbod(bod)%tied_nn(j,2)=i ! Mark right nodes
-      j=j+1
+      IF(mbod(bod)%g_coord(1,i)<leftbound+0.01_iwp)THEN
+        mbod(bod)%tied_nn(j,1)=i  ! Mark left nodes
+        j=j+1
+      ELSE IF(mbod(bod)%g_coord(1,i)>rightbound-0.01_iwp)THEN
+        mbod(bod)%tied_nn(k,2)=i ! Mark right nodes
+        k=k+1
+      ENDIF
     END DO
     
     !- Fix pore presure in the not cornered nodes
@@ -1160,9 +1182,6 @@ PROGRAM Implicit_MPM_eartquake
     mbod(bod)%c_force    = zero
     mbod(bod)%mf_force   = zero
     
-    ! Domain matrices
-    mbod(bod)%diag       = zero
-    
     ! freefield variables
     right_penpos         = zero
     right_penpos_count   = 0
@@ -1199,13 +1218,13 @@ PROGRAM Implicit_MPM_eartquake
   END DO Reset_Variables
   
   ! Calculate diagonal mass matrix (diag)
-  ! For FF body, gravlo is calculated here
+  ! For FF body, gravlo is also calculated here
   Body_Solution: DO bod=1,size(mbod)
     mvval=1
     IF(bod==1)THEN
       ! The following code are for smethod = 2 [GIMP] or 3 [CMPM] only
       DO i=1,mbod(bod)%nmps
-        iel=mbod(bod)%a_ele(i)    
+        iel=mbod(bod)%a_ele(i)
           
         ! Determine number of support nodes and allocate variable for GIMP shape functions
         CALL GIMP_nodsup(i,g_num,nip,g_coord,mbod(bod)%gm_coord,mbod(bod)%lp_mp,mbod(bod)%mpoints,mbod(bod)%valuesg,mbod(bod)%gimptol,neighb,nny,mbod(bod)%a_ele,mbod(bod)%GIMP_nodes)
@@ -1225,11 +1244,16 @@ PROGRAM Implicit_MPM_eartquake
       i=1; j=1; n=1
       CALL sample(element,points,weights)
       DO k=1,mbod(bod)%nmps
+        mbod(bod)%diag=zero
         iel=mbod(bod)%a_ele(k) 
         
         !--------------------------------------------------------------------------AS
         ! Build diagonal mass matrix (diag)
         !--------------------------------------------------------------------------AS
+        ! The element steering vector is set such that in x-direction, g is 0
+        ! because the body mass only go downwards
+        mbod(bod)%g=mbod(bod)%g_g(:,iel) 
+        mbod(bod)%g(1:mbod(bod)%ntot:2)=0
         
         ! build consistent mass matrix with ecmat2
         num=mbod(bod)%g_num(:,iel)
@@ -1254,7 +1278,7 @@ PROGRAM Implicit_MPM_eartquake
         mm_s=mm_s+ecm*mbod(bod)%m_dens(k)*det*weights(i)
       
         ! accummulate all the diagonal mass matrix from all the elements
-        CALL formlump(mbod(bod)%diag,mm_s,mbod(bod)%g(1:18))
+        CALL formlump(mbod(bod)%diag,mm_s,mbod(bod)%g(1:ndof))
         mbod(bod)%diag(0)=zero
 
         ! increment i to cycle weigths for next stress points
@@ -1264,11 +1288,6 @@ PROGRAM Implicit_MPM_eartquake
         !--------------------------------------------------------------------------AS
         ! Calculate body loads (gravlo)
         !--------------------------------------------------------------------------AS
-        ! The element steering vector is set such that in x-direction, g is 0
-        ! because the body mass only go downwards
-        mbod(bod)%g=mbod(bod)%g_g(:,iel) 
-        mbod(bod)%g(1:mbod(bod)%ntot:2)=0
-        
         ! calculate the actual gravity loading (gravlo = mm*grav_acceleration)
         mbod(bod)%gravlo(mbod(bod)%g(1:ndof)) = mbod(bod)%gravlo(mbod(bod)%g(1:ndof)) + &
                                                 mbod(bod)%diag(mbod(bod)%g(1:ndof))*(-Gravf)  
@@ -1389,18 +1408,54 @@ PROGRAM Implicit_MPM_eartquake
         DEALLOCATE(derextend,funextend2,eldddylds,mm_gimp)
       END DO KM_MV
       
+
       !--------------------------------------------------------------------------AS
       ! Build modified stiffness matrix (kp / MOD_MTX) for MPM body
       !--------------------------------------------------------------------------AS
-      Combined_Stiffness:DO bod=1,1  
-        !fm=0.052359878_iwp;fk=0.000265258_iwp
-        fm=0.0_iwp;fk=0.0_iwp
-        ! Calculate modified stiffness matrix (constant stiffness through out the iterations)
-        IF(mbod(bod)%nmps>1)THEN 
-          mbod(bod)%kp=4.0_iwp*mbod(bod)%mv/dtim**2.0_iwp + 2.0_iwp*fm*mbod(bod)%mv/dtim + 2.0_iwp*fk*mbod(bod)%kv/dtim + mbod(bod)%kv
-          CALL sparin(mbod(bod)%kp,mbod(bod)%kdiag)
+      !fm=0.052359878_iwp;fk=0.000265258_iwp
+      fm=0.0_iwp;fk=0.0_iwp
+      ! Calculate modified stiffness matrix (constant stiffness through out the iterations)
+      mbod(bod)%kp=4.0_iwp*mbod(bod)%mv/dtim**2.0_iwp + 2.0_iwp*fm*mbod(bod)%mv/dtim + 2.0_iwp*fk*mbod(bod)%kv/dtim + mbod(bod)%kv
+      
+      !---------------------------------------------------------------------------------------AS
+      ! Apply penalty stiffness to modified stiffness matrix
+      !---------------------------------------------------------------------------------------AS
+  
+      !*** AS's Thesis
+      !--- Determine freefield boundaries displacement
+      CALL get_ff_displacement(         &
+        mpm_disp=left_penpos,           &
+        mpm_counter=left_penpos_count,  &
+        mpm_bc_elements=left_boundary,  &
+        mpm_g_num=g_num,                &
+        mpm_nf=mbod(1)%nf,              &
+        ff_disp=mbod(2)%x1,             &
+        ff_g_num=mbod(2)%g_num,         &
+        ff_nf=mbod(2)%nf                &
+      )
+        
+      CALL get_ff_displacement(         &
+        mpm_disp=right_penpos,          &
+        mpm_counter=right_penpos_count, &
+        mpm_bc_elements=right_boundary, &
+        mpm_g_num=g_num,                &
+        mpm_nf=mbod(1)%nf,              &
+        ff_disp=mbod(3)%x1,             &
+        ff_g_num=mbod(3)%g_num,         &
+        ff_nf=mbod(3)%nf                &
+      )
+        
+      !--- Apply penalty to modified stiffness matrix (kp) and form boundary force
+      DO i=1,mbod(1)%neq
+        IF(left_penpos_count(i) > 0)THEN
+          mbod(1)%kp(mbod(1)%kdiag(i)) = mbod(1)%kp(mbod(1)%kdiag(i)) + penalty
+        ELSE IF(right_penpos_count(i) > 0)THEN
+          mbod(1)%kp(mbod(1)%kdiag(i)) = mbod(1)%kp(mbod(1)%kdiag(i)) + penalty
         END IF
-      END DO Combined_Stiffness
+      END DO
+      
+      CALL sparin(mbod(bod)%kp,mbod(bod)%kdiag)
+      
       
     ELSE ! Freefields
       i=1; j=1; n=1; q=1
@@ -1655,16 +1710,16 @@ PROGRAM Implicit_MPM_eartquake
     !---------------------------------------------------------------------------AS
     ! Determine Nodal Kinematics
     !---------------------------------------------------------------------------AS
-
+    
     ! Calculate actual nodal acceleration 
     DO bod=2,size(mbod)
-      IF(tstep<=accdata.and.tstep>=1)THEN
+      lowbound=minval(mbod(bod)%g_coord(2,:)) 
+      IF(w<=accdata.and.w>=1)THEN
         DO i=1,(mbod(bod)%ney+1)*(mbod(bod)%nex)
           IF(mbod(bod)%g_coord(2,i)<lowbound+0.01_iwp)THEN
-            valone = ground_acc(tstep)
             mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i)) =                    &
                 mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i))+                 &
-                (2.0_iwp*ground_acc(tstep)-mbod(bod)%kinup_d2x1(mbod(bod)%nf(1,i)))
+                (2.0_iwp*mbod(bod)%ground_acc(w)-mbod(bod)%kinup_d2x1(mbod(bod)%nf(1,i)))
             mbod(bod)%kinup_Ground_d2x1(0)=zero
           END IF    
         END DO
@@ -1722,7 +1777,7 @@ PROGRAM Implicit_MPM_eartquake
       mbod(bod)%c_force(0)  = zero
     END DO Force_MA 
     
-    Force_CV: DO bod=2,size(bod)
+    Force_CV: DO bod=2,size(mbod)
       ! This is force from the general body motion F=Ma
       CALL bantmul(                                               &
         mbod(bod)%mf_matrix,                                      &
@@ -1749,11 +1804,12 @@ PROGRAM Implicit_MPM_eartquake
     FEM_Displacements: DO bod=2,size(mbod)
       ! Combine all the forces: gravity loads, internal loads, ground loads, 
       ! displacement loads, and damping load
+      mbod(bod)%gravlo   = zero ! added temporarily to match MPM loading
       mbod(bod)%loads    = zero
       mbod(bod)%residual = zero
-      mbod(bod)%loads    = mbod(bod)%gravlo - mbod(bod)%ddylds +  &
-                           mbod(bod)%ground_loads -               &
-                           mbod(bod)%mf_force - mbod(bod)%c_force
+      mbod(bod)%loads    = mbod(bod)%gravlo-mbod(bod)%ddylds -    &
+                           mbod(bod)%mf_force-mbod(bod)%c_force + &
+                           mbod(bod)%ground_loads                 
       mbod(bod)%loads(0)=zero
 
       ! Check whether the calculated loads has converge (saved in newrapconv1)
@@ -1886,13 +1942,12 @@ PROGRAM Implicit_MPM_eartquake
     ff_g_num=mbod(3)%g_num,         &
     ff_nf=mbod(3)%nf                &
   )
-  !--- Apply penalty to modified stiffness matrix (kp) and form boundary force
+    
+  !--- Calculate boundary penalized force
   DO i=1,mbod(1)%neq
     IF(left_penpos_count(i) > 0)THEN
-      mbod(1)%kp(mbod(1)%kdiag(i)) = mbod(1)%kp(mbod(1)%kdiag(i)) + penalty
       mbod(1)%f_ff(i) = left_penpos(i) * mbod(1)%kp(mbod(1)%kdiag(i))
     ELSE IF(right_penpos_count(i) > 0)THEN
-      mbod(1)%kp(mbod(1)%kdiag(i)) = mbod(1)%kp(mbod(1)%kdiag(i)) + penalty
       mbod(1)%f_ff(i) = right_penpos(i) * mbod(1)%kp(mbod(1)%kdiag(i))
     END IF
   END DO
@@ -1912,7 +1967,7 @@ PROGRAM Implicit_MPM_eartquake
     ! Determine Nodal Kinematics
     !---------------------------------------------------------------------------AS
     
-    ! calculate node velocity (d1x1) and acceleration (d2x1)
+    ! calculate nodal velocity (d1x1) and acceleration (d2x1)
     DO bod=1,1
       IF(mbod(bod)%nmps>1)THEN 
         MP_VelAccP: DO i=1,mbod(bod)%nmps
@@ -2070,7 +2125,8 @@ PROGRAM Implicit_MPM_eartquake
 
     MPM_DISPLACEMENTS: DO bod=1,1
       mbod(bod)%loads=zero
-      mbod(bod)%loads=mbod(bod)%gravlo-mbod(bod)%ddylds-mbod(bod)%vcm-mbod(bod)%cdamp+    &
+      mbod(bod)%loads=mbod(bod)%gravlo-mbod(bod)%ddylds- &
+                      mbod(bod)%vcm-mbod(bod)%cdamp+     & ! in FEM these are mf_force & c_force
                       mbod(bod)%f_earth+mbod(bod)%f_ff
       mbod(bod)%loads(0)=zero 
       IF(DEBUG) write(800, '((A15":"), *(E15.5 ","))'), '"loads"',mbod(1)%loads
@@ -2373,28 +2429,26 @@ PROGRAM Implicit_MPM_eartquake
   REVERSE_MAPPING: DO bod=1,size(mbod)
     IF(bod==1)THEN
       mbod(bod)%vccp=zero
-      IF(mbod(bod)%nmps>1)THEN 
-        DO i=1,mbod(bod)%nmps
-          values=mbod(bod)%valuesg(i)
-          ALLOCATE(derextend(nodof,values),beeextend(nst,values*nodof),funextend2(values*2,2),	&
-            eldddylds(values*2),funextend(values),jac_coord(values,nodof),eldCMPM(values*2))
-          CALL GIMP_funder(i,nip,g_coord,cellsize,mbod(bod)%gm_coord,mbod(bod)%lp_mp,mbod(bod)%GIMP_nodes,mbod(bod)%gimptol,derextend,funextend) !--creates the matrix with the values of shape functions and derivatives
+      DO i=1,mbod(bod)%nmps
+        values=mbod(bod)%valuesg(i)
+        ALLOCATE(derextend(nodof,values),beeextend(nst,values*nodof),funextend2(values*2,2),	&
+          eldddylds(values*2),funextend(values),jac_coord(values,nodof),eldCMPM(values*2))
+        CALL GIMP_funder(i,nip,g_coord,cellsize,mbod(bod)%gm_coord,mbod(bod)%lp_mp,mbod(bod)%GIMP_nodes,mbod(bod)%gimptol,derextend,funextend) !--creates the matrix with the values of shape functions and derivatives
         
-          CALL eldformgimp(i,eldCMPM,mbod(bod)%kinup_d2x1,mbod(bod)%nf,mbod(bod)%GIMP_nodes,values,mbod(bod)%g_g)
-          mbod(bod)%accp(1,i)=DOT_PRODUCT(eldCMPM(1:ndof:2),funextend)
-          mbod(bod)%accp(2,i)=DOT_PRODUCT(eldCMPM(2:ndof:2),funextend)
-          mbod(bod)%m_acc(:,i)=mbod(bod)%accp(:,i)
-          mbod(bod)%m_velocity(:,i)=mbod(bod)%m_velocity(:,i)+0.5_iwp*(mbod(bod)%accp(:,i)+mbod(bod)%accb(:,i))*dtim
+        CALL eldformgimp(i,eldCMPM,mbod(bod)%kinup_d2x1,mbod(bod)%nf,mbod(bod)%GIMP_nodes,values,mbod(bod)%g_g)
+        mbod(bod)%accp(1,i)=DOT_PRODUCT(eldCMPM(1:ndof:2),funextend)
+        mbod(bod)%accp(2,i)=DOT_PRODUCT(eldCMPM(2:ndof:2),funextend)
+        mbod(bod)%m_acc(:,i)=mbod(bod)%accp(:,i)
+        mbod(bod)%m_velocity(:,i)=mbod(bod)%m_velocity(:,i)+0.5_iwp*(mbod(bod)%accp(:,i)+mbod(bod)%accb(:,i))*dtim
 
-          CALL eldformgimp(i,eldCMPM,mbod(bod)%x1,mbod(bod)%nf,mbod(bod)%GIMP_nodes,values,mbod(bod)%g_g)
-          mbod(bod)%ins(1,i)=DOT_PRODUCT(eldCMPM(1:ndof:2),funextend)
-          mbod(bod)%ins(2,i)=DOT_PRODUCT(eldCMPM(2:ndof:2),funextend)
-          mbod(bod)%a_ins(:,i)=mbod(bod)%a_ins(:,i)+mbod(bod)%ins(:,i)
-          mbod(bod)%gm_coord(:,i)=mbod(bod)%gm_coord(:,i)+mbod(bod)%ins(:,i)
-          DEALLOCATE(derextend,beeextend,funextend2,eldddylds,funextend,jac_coord,eldCMPM)
-        END DO
-        mbod(bod)%accb=mbod(bod)%accp
-      END IF
+        CALL eldformgimp(i,eldCMPM,mbod(bod)%x1,mbod(bod)%nf,mbod(bod)%GIMP_nodes,values,mbod(bod)%g_g)
+        mbod(bod)%ins(1,i)=DOT_PRODUCT(eldCMPM(1:ndof:2),funextend)
+        mbod(bod)%ins(2,i)=DOT_PRODUCT(eldCMPM(2:ndof:2),funextend)
+        mbod(bod)%a_ins(:,i)=mbod(bod)%a_ins(:,i)+mbod(bod)%ins(:,i)
+        mbod(bod)%gm_coord(:,i)=mbod(bod)%gm_coord(:,i)+mbod(bod)%ins(:,i)
+        DEALLOCATE(derextend,beeextend,funextend2,eldddylds,funextend,jac_coord,eldCMPM)
+      END DO
+      mbod(bod)%accb=mbod(bod)%accp
     ELSE
       DO i=1,mbod(bod)%nmps
         iel=mbod(bod)%a_ele(i)
@@ -2426,7 +2480,7 @@ PROGRAM Implicit_MPM_eartquake
   ! Clean up memory for Pardiso solver
   phase = -1
   DO bod=2,size(mbod)
-    CALL pardiso(                                                   &
+    CALL pardiso(                                                 &
       mbod(bod)%pt,                                               &
       maxfct,                                                     &
       mnum,                                                       &

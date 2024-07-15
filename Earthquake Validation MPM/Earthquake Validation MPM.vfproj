@@ -54,16 +54,13 @@
 		<Filter Name="Input"/>
 		<Filter Name="Libraries">
 		<File RelativePath=".\Libraries\fem.f90"/>
-		<File RelativePath=".\Libraries\geom.f90"/>
-		<File RelativePath=".\Libraries\gimp.f90"/>
 		<File RelativePath=".\Libraries\Logging.f90"/>
-		<File RelativePath=".\Libraries\main.f90"/>
 		<File RelativePath=".\Libraries\mpm-geom.f90"/>
 		<File RelativePath=".\Libraries\mpm-gimp.f90"/>
 		<File RelativePath=".\Libraries\mpm-main.f90"/>
 		<File RelativePath=".\Libraries\mpm-mpm.f90"/>
-		<File RelativePath=".\Libraries\mpm.f90"/>
-		<File RelativePath=".\Libraries\sparse_lib.f90"/></Filter>
+		<File RelativePath=".\Libraries\sparse_lib.f90"/>
+		<File RelativePath=".\Libraries\utilities.f90"/></Filter>
 		<Filter Name="Modules"/>
 		<Filter Name="Output">
 		<Filter Name="Paraview2"/>
@@ -73,7 +70,11 @@
 			<FileConfiguration Name="Release|x64" ExcludedFromBuild="true"/>
 			<FileConfiguration Name="Debug|x64" ExcludedFromBuild="true"/>
 			<FileConfiguration Name="Release|Win32" ExcludedFromBuild="true"/></File>
-		<File RelativePath=".\Earthquake validation COMBINED.f90"/>
+		<File RelativePath=".\Earthquake validation COMBINED.f90">
+			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/>
+			<FileConfiguration Name="Release|x64" ExcludedFromBuild="true"/>
+			<FileConfiguration Name="Debug|x64" ExcludedFromBuild="true"/>
+			<FileConfiguration Name="Release|Win32" ExcludedFromBuild="true"/></File>
 		<File RelativePath=".\Earthquake validation ORIGINAL.f90">
 			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/>
 			<FileConfiguration Name="Release|x64" ExcludedFromBuild="true"/>
@@ -84,6 +85,7 @@
 			<FileConfiguration Name="Release|x64" ExcludedFromBuild="true"/>
 			<FileConfiguration Name="Debug|x64" ExcludedFromBuild="true"/>
 			<FileConfiguration Name="Release|Win32" ExcludedFromBuild="true"/></File>
+		<File RelativePath=".\Earthquake validation THREADED.f90"/>
 		<File RelativePath=".\Earthquake validation.f90">
 			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/>
 			<FileConfiguration Name="Release|x64" ExcludedFromBuild="true"/>

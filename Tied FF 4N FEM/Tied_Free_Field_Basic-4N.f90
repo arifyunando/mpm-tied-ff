@@ -645,7 +645,7 @@ PROGRAM Tied_Free_Field_Basic
         ! c_matrix and mf_matrix are used to determine the kinematic update
         ! of each iterations in each time steps. F=ma & F=cv
         ALLOCATE(                                                               &
-            mbod(bod)%c_matrix(mbod(bod)%neq,2*(nband+1)),                      &
+            mbod(bod)%c_matrix(mbod(bod)%neq,2*(nband+1)),                     &
             mbod(bod)%mf_matrix(mbod(bod)%neq,2*(nband+1))                      &
         )
         

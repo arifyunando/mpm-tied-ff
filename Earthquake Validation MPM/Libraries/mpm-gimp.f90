@@ -29,34 +29,52 @@ SUBROUTINE beematgimp(s,bee,deriv,values)
 END SUBROUTINE beematgimp
 
 
-SUBROUTINE gimpfunform(s,iel,eldddylds,nf,GIMP_nodes,values,g_g,mvval)
-    !
-    ! Subroutine to create the shape function vector to interpolate values from particles to nodes
-    !
-    IMPLICIT NONE
-    INTEGER,PARAMETER::iwp=SELECTED_REAL_KIND(15)
-    INTEGER,INTENT(IN)::iel,GIMP_nodes(:,:),g_g(:,:),nf(:,:),s,values,mvval
-    INTEGER,INTENT(OUT)::eldddylds(:)
-    INTEGER::i,n
-    
-    eldddylds=0
-    n=1
-    !loads(b+1) is due because when sending the load vector to the subroutine, 
-    !there is no loads(0) value anymore, every value is now loads(0+1)
-    DO i=1,values
-        !eldddylds(n:n+1)=loads(b+1)
-        !IF(num(s)==8.or.num(s)==23.or.num(s)==38.or.num(s)==53.or.num(s)==68.or.num(s)==83.or.num(s)==98)THEN
-        !If((GIMP_nodes(i,s)==8.or.GIMP_nodes(i,s)==23.or.GIMP_nodes(i,s)==38.or.GIMP_nodes(i,s)==53.or. &
-        !GIMP_nodes(i,s)==68.or.GIMP_nodes(i,s)==83.or.GIMP_nodes(i,s)==98).and.mvval==2)THEN
-        !    eldddylds(n:n+1)=0
-        !ELSE   
-        eldddylds(n:n+1)=nf(:,GIMP_nodes(i,s))
-        !END IF    
-        n=n+2
-    END DO
-    
-    RETURN 
+SUBROUTINE gimpfunform(s,eldddylds,nf,GIMP_nodes,values)
+   !
+   ! Subroutine to create the shape function vector to interpolate values from particles to nodes
+   !
+   IMPLICIT NONE
+   INTEGER,PARAMETER::iwp=SELECTED_REAL_KIND(15)
+   INTEGER,INTENT(IN)::GIMP_nodes(:,:),nf(:,:),s,values
+   INTEGER,INTENT(OUT)::eldddylds(:)
+   INTEGER::i,n
+   eldddylds=0
+   n=1
+   DO i=1,values
+     eldddylds(n:n+1)=nf(:,GIMP_nodes(i,s))
+     n=n+2
+   END DO
+   RETURN 
 END SUBROUTINE gimpfunform
+
+! SUBROUTINE gimpfunform(s,iel,eldddylds,nf,GIMP_nodes,values,g_g,mvval)
+!     !
+!     ! Subroutine to create the shape function vector to interpolate values from particles to nodes
+!     !
+!     IMPLICIT NONE
+!     INTEGER,PARAMETER::iwp=SELECTED_REAL_KIND(15)
+!     INTEGER,INTENT(IN)::iel,GIMP_nodes(:,:),g_g(:,:),nf(:,:),s,values,mvval
+!     INTEGER,INTENT(OUT)::eldddylds(:)
+!     INTEGER::i,n
+    
+!     eldddylds=0
+!     n=1
+!     !loads(b+1) is due because when sending the load vector to the subroutine, 
+!     !there is no loads(0) value anymore, every value is now loads(0+1)
+!     DO i=1,values
+!         !eldddylds(n:n+1)=loads(b+1)
+!         !IF(num(s)==8.or.num(s)==23.or.num(s)==38.or.num(s)==53.or.num(s)==68.or.num(s)==83.or.num(s)==98)THEN
+!         !If((GIMP_nodes(i,s)==8.or.GIMP_nodes(i,s)==23.or.GIMP_nodes(i,s)==38.or.GIMP_nodes(i,s)==53.or. &
+!         !GIMP_nodes(i,s)==68.or.GIMP_nodes(i,s)==83.or.GIMP_nodes(i,s)==98).and.mvval==2)THEN
+!         !    eldddylds(n:n+1)=0
+!         !ELSE   
+!         eldddylds(n:n+1)=nf(:,GIMP_nodes(i,s))
+!         !END IF    
+!         n=n+2
+!     END DO
+    
+!     RETURN 
+! END SUBROUTINE gimpfunform
 
 
 SUBROUTINE eldform(eld,loads,iel,neighb,values,g_g,bound,m)

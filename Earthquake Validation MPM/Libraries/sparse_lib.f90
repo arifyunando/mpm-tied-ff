@@ -440,43 +440,39 @@ subroutine formspars(ntot,g,ke,iebea,jebea,ebea,ebeanz)
 end subroutine formspars
 !-------------------------------------------------------------------------------
 subroutine formspars_unsym(ntot,g,ke,iebea,jebea,ebea,ebeanz)
-    ! This subroutine collect non-zero entries for each new generated    &
-    !                 element stiffness matrix, forming the element-level&
-    !                 three vectors which store nonzero entries of upper &
-    !                 triangular part of A.
-    !           ntot: total freedoms per element;
-    !              g: element steering vector;
-    !             ke: element "stiffness" matrix;
-    !          iebea: global row index;
-    !          jebea: global column index;
-    !           ebea: correspondent value of the nonzero element stiffness
-    !                 entry;
-    !         ebeanz: true total number of nonzero element-level entries,
-    !                 not estimated number any more when returned.
-    implicit none
-    INTEGER,PARAMETER::iwp=SELECTED_REAL_KIND(15)
-    REAL(iwp)::ke(:,:),ebea(:),zero=0.0_iwp
-    !real(8):: ke(:,:),ebea(:)
-    integer::i,j,ntot,ebeanz,g(:),iebea(:),jebea(:)
-    !--- Storing upper triangle of element stiffness column by column ---
-        do j=1, ntot
-            do i=1, ntot
-            if(g(i)/=0.and.g(j)/=0) then
-                !if(ke(i,j)/=.0)then !Old rule
-                if(ABS(ke(i,j))/=zero)then
-                !if(g(i)<=g(j) )then
-                    ebeanz=ebeanz+1 ;  iebea(ebeanz)=g(i)
-                    jebea(ebeanz)=g(j) ; ebea(ebeanz)=ke(i,j)
-                !else
-                !  ebeanz=ebeanz+1 ;  iebea(ebeanz)=g(j)
-                !  jebea(ebeanz)=g(i) ; ebea(ebeanz)=ke(i,j)
-                !end if
-                end if
-            end if
-            end do
-        end do
-        !
-        return
+  ! This subroutine collect non-zero entries for each new generated    &
+  !                 element stiffness matrix, forming the element-level&
+  !                 three vectors which store nonzero entries of upper &
+  !                 triangular part of A.
+  !           ntot: total freedoms per element;
+  !              g: element steering vector;
+  !             ke: element "stiffness" matrix;
+  !          iebea: global row index;
+  !          jebea: global column index;
+  !           ebea: correspondent value of the nonzero element stiffness
+  !                 entry;
+  !         ebeanz: true total number of nonzero element-level entries,
+  !                 not estimated number any more when returned.
+  implicit none
+  INTEGER,PARAMETER::iwp=SELECTED_REAL_KIND(15)
+  REAL(iwp)::ke(:,:),ebea(:),zero=0.0_iwp
+  !real(8):: ke(:,:),ebea(:)
+  integer::i,j,ntot,ebeanz,g(:),iebea(:),jebea(:)
+  !--- Storing upper triangle of element stiffness column by column ---
+  do j=1, ntot
+    do i=1, ntot
+      if(g(i)/=0.and.g(j)/=0) then
+        if(ABS(ke(i,j))/=zero)then
+          ebeanz=ebeanz+1
+          iebea(ebeanz)=g(i)
+          jebea(ebeanz)=g(j)
+          ebea(ebeanz)=ke(i,j)
+        end if
+      end if
+    end do
+  end do
+  !
+  return
 end subroutine formspars_unsym
 !-------------------------------------------------------------------------------
 !-------- SUBROUTINES FOR MATRIX-VECTOR PRODUCTS AND TRIANGULAR SOLVERS --------
