@@ -193,7 +193,7 @@ PROGRAM Implicit_MPM_eartquake
   !-The plastic loop jis to consider plasticity. ploop = 1 consider plasticity, any other value does not
   ploop=0
   
-  printval = 1
+  printval = 5
   PRINT*, 'Printing results:', printval
   
   Tini=0.0;Tfin=0.0;Tcont=0.0
@@ -873,9 +873,9 @@ PROGRAM Implicit_MPM_eartquake
   ! Define gravity field
   Gravf=10.00_iwp
   k0=0.50_iwp
-  g_matrix=(/0.0,-10.0_iwp/)  !--Gravity acting in the vertical direction
+  g_matrix=(/0.0_iwp,-10.0_iwp/)  !--Gravity acting in the vertical direction
   DO bod=1,size(mbod)
-    mbod(bod)%g_matrix=(/0.0,-10.0/)
+    mbod(bod)%g_matrix=(/0.0_iwp,-10.0_iwp/)
   END DO
 
   ! Obtain ground movement data
@@ -1104,7 +1104,7 @@ PROGRAM Implicit_MPM_eartquake
   
 
   !---------------------------------------------------------------------------AS
-  ! Construct Mass Vector (diag)
+  ! Construct Mass Vector (diag) and Calculate Gravity loads (gravlo)
   !---------------------------------------------------------------------------AS
   Body_Solution: DO bod=1,size(mbod)
     IF(bod==1)THEN
@@ -1125,10 +1125,15 @@ PROGRAM Implicit_MPM_eartquake
         eldddylds=zero;funextend2=zero;beeextend=zero;derextend=zero;jac_coord=zero
         CALL GIMP_funder2(i,nip,g_coord,cellsize,mbod(bod)%gm_coord,mbod(bod)%lp_mp,mbod(bod)%GIMP_nodes,mbod(bod)%gimptol,derextend,funextend2)  
         CALL gimpfunform(i,eldddylds,mbod(bod)%nf,mbod(bod)%GIMP_nodes,values)  
-                                
+                      
+        ! Calculate nodal gravity loads (gravlo)
+        mbod(bod)%gravlo(eldddylds) = mbod(bod)%gravlo(eldddylds) + MATMUL(funextend2,mbod(bod)%m_mass(i)*MATMUL(delta,g_matrix))  
+        mbod(bod)%gravlo(0) = zero
+
         ! Form nodal masses (diag; size(diag) = neq)
         mbod(bod)%diag(eldddylds) = mbod(bod)%diag(eldddylds) + MATMUL(funextend2,mbod(bod)%m_mass(i)*delta_1)
-        mbod(bod)%diag(0)=zero
+        mbod(bod)%diag(0) = zero
+
         DEALLOCATE(derextend,funextend2,eldddylds,jac_coord,beeextend,mm_gimp)
       END DO
     ELSE !- Free Fields bodies
@@ -1137,11 +1142,6 @@ PROGRAM Implicit_MPM_eartquake
       DO k=1,mbod(bod)%nmps
         mbod(bod)%diag=zero
         iel=mbod(bod)%a_ele(k) 
-        
-        ! The element steering vector is set such that in x-direction, g is 0
-        ! because the body mass only go downwards
-        mbod(bod)%g=mbod(bod)%g_g(:,iel) 
-        mbod(bod)%g(1:mbod(bod)%ndof:2)=0
         
         ! build element consistent mass matrix (ecm) with ecmat2
         num=mbod(bod)%g_num(:,iel)
@@ -1167,8 +1167,15 @@ PROGRAM Implicit_MPM_eartquake
         ! increment i to cycle weigths for next stress points
         ! Note: this will break if a_ele is not ordered correctly
         i=i+1; IF(i>nip)THEN
+          ! The element steering vector is set such that in x-direction, g is 0
+          ! because the gravity load and body mass only go downwards
+          mbod(bod)%g=mbod(bod)%g_g(:,iel) 
+          mbod(bod)%g(1:size(mbod(bod)%g):2)=0
+          
           ! form mass vector (diag)
-          CALL formlump(mbod(bod)%diag,mm_s,mbod(bod)%g(1:ndof))
+          CALL formlump(mbod(bod)%diag,mm_s,mbod(bod)%g)
+          mbod(bod)%gravlo(mbod(bod)%g) = mbod(bod)%gravlo(mbod(bod)%g) + mbod(bod)%diag(mbod(bod)%g)*(-Gravf)  
+  
           mbod(bod)%diag(0)=zero
           mm_s=zero
           i=1
@@ -1599,7 +1606,7 @@ PROGRAM Implicit_MPM_eartquake
     ! Determine Nodal Forces
     !-------------------------------------------------------------------------AS
 
-    ! Calculate internal force (ddylds) and gravity load (gravlo) from particle stresses (m_stress)
+    ! Calculate internal force (ddylds) from particle stresses (m_stress)
     DO bod=1,1 ! MPM Body
       mbod(bod)%ddylds=zero
       DO i=1,mbod(bod)%nmps
@@ -1628,10 +1635,6 @@ PROGRAM Implicit_MPM_eartquake
         mbod(bod)%ddylds(eldddylds)=mbod(bod)%ddylds(eldddylds) + MATMUL(sigma,beeextend)*(4.0*mbod(bod)%lp_mp(1,i)*mbod(bod)%lp_mp(2,i))
         mbod(bod)%ddylds(0)=zero 
 
-        ! Calculate Gravity Loads (gravlo)
-        mbod(bod)%gravlo(eldddylds)=mbod(bod)%gravlo(eldddylds) + mbod(bod)%diag(eldddylds)*(-Gravf)  
-        mbod(bod)%gravlo(0)=zero
-
         DEALLOCATE(derextend,funextend2,eldddylds,jac_coord,beeextend)
       END DO
     END DO 
@@ -1656,11 +1659,7 @@ PROGRAM Implicit_MPM_eartquake
         ! Calculate Body Loads (ddylds)
         sigma=mbod(bod)%m_stress(:,i) 
         mbod(bod)%ddylds(mbod(bod)%g) = mbod(bod)%ddylds(mbod(bod)%g) + MATMUL(TRANSPOSE(bee),sigma)*det*weights(a)
-        mbod(bod)%ddylds(0)=zero 
-
-        ! Calculate Gravity Loads (gravlo)
-        mbod(bod)%gravlo(mbod(bod)%g) = mbod(bod)%gravlo(mbod(bod)%g) + mbod(bod)%diag(mbod(bod)%g)*(-Gravf)  
-        mbod(bod)%gravlo(0)=zero
+        mbod(bod)%ddylds(0)=zero
 
         a=a+1; IF(a>nip)a=1
       END DO
