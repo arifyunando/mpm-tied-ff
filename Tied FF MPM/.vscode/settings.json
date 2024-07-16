@@ -1,0 +1,6 @@
+{
+    "fortran.linter.includePaths": [
+        "${workspaceFolder}/Libraries/"
+    ],
+    "fortran.linter.compiler": "ifx"
+}

@@ -30,7 +30,7 @@ PROGRAM Implicit_MPM_eartquake
   
   !*** AS's Thesis
   ! These variables will become placeholders for tracking boundary elements
-  INTEGER,ALLOCATABLE:: left_boundary(:), right_boundary(:), bottom_boundary(:)
+  INTEGER,ALLOCATABLE:: left_boundary(:), right_boundary(:), iel_boundary(:,:)
   INTEGER:: maxint=1000000, offset_x, offset_y
   
   INTEGER:: gravbod1,gravbod2,smethod,slopeopt,ploop
@@ -108,8 +108,8 @@ PROGRAM Implicit_MPM_eartquake
   INTEGER,ALLOCATABLE:: sum_vol(:),c_ele(:),m_num(:),a_ele(:),                  &
     k_ele(:),b_ele(:),d_ele(:),dp_ele(:),flag(:),g_s(:)
 
-  INTEGER,ALLOCATABLE::left_penpos_count(:),right_penpos_count(:)
-  REAL(iwp),ALLOCATABLE::left_penpos(:),right_penpos(:),penalized_stiffness(:)
+  INTEGER,ALLOCATABLE::penpos_count(:)
+  REAL(iwp),ALLOCATABLE::penpos_displacement(:),penalized_stiffness(:)
   
   REAL(iwp),ALLOCATABLE::ini_volume(:),gm_coord(:,:),m_coord(:,:),              &
     mweights(:),m_mass(:),m_volume(:),ini_density(:),m_stress(:,:),             &
@@ -566,6 +566,8 @@ PROGRAM Implicit_MPM_eartquake
     ALLOCATE(mbod(bod)%boundnod(nn))        
     ALLOCATE(mbod(bod)%base_nn(nn))
   END DO
+  
+  ALLOCATE(iel_boundary(2, 2*mbod(2)%ney + nx1))
 
   delta=0.0
   delta(1,1)=1.0
@@ -615,10 +617,6 @@ PROGRAM Implicit_MPM_eartquake
         IF(right_boundary(rowy-offset_y) < colx) right_boundary(rowy-offset_y) = colx
         IF(left_boundary(rowy-offset_y) > colx) left_boundary(rowy-offset_y) = colx
       END IF
-      bottom_boundary(0) = right_boundary(size(right_boundary)) - left_boundary(size(left_boundary)) - 1
-      DO k=1,bottom_boundary(0) 
-        bottom_boundary(k) = right_boundary(size(right_boundary)) + k
-      END DO
 
       ! Locate local position of material point 'i' in element 'ielloc'
       num=g_num(:,ielloc)
@@ -656,8 +654,22 @@ PROGRAM Implicit_MPM_eartquake
     IF( left_boundary(i)>MAXINT-1 ) print *, "corresponding left boundary element", i, "is not found"
     left_boundary(i) = ((i+offset_y) - 1.0)*nx1 + left_boundary(i)
   END DO
-  DO i=1,bottom_boundary(0)
-    bottom_boundary(i) = ((bottom_boundary(i) + offset_y) - 1.0)*nx1 + size(left_boundary)
+  ! List all the boundary MPM cells and its corresponding freefield cells
+  iel_boundary=0; k=1
+  DO i=1,size(left_boundary) 
+    iel_boundary(1,k) = i
+    iel_boundary(2,k) = left_boundary(i)
+    k = k+1
+  END DO
+  DO i=1,size(right_boundary) 
+    iel_boundary(1,k) = i
+    iel_boundary(2,k) = right_boundary(i)
+    k = k+1
+  END DO
+  DO i=left_boundary(size(left_boundary)), right_boundary(size(right_boundary))
+    iel_boundary(1,k) = size(left_boundary)
+    iel_boundary(2,k) = i
+    k = k+1
   END DO
 
   ! This flagging process for FEM relies on the stress points are indexed in the order of element number
@@ -839,10 +851,8 @@ PROGRAM Implicit_MPM_eartquake
   !*** AS's Thesis
   ! allocate penalty position marker
   ALLOCATE(                               &
-    left_penpos(0:mbod(1)%neq),           &
-    left_penpos_count(0:mbod(1)%neq),     &
-    right_penpos(0:mbod(1)%neq),          &
-    right_penpos_count(0:mbod(1)%neq),    &
+    penpos_displacement(0:mbod(1)%neq),    &
+    penpos_count(0:mbod(1)%neq),          &
     penalized_stiffness(0:mbod(1)%neq))
 
   !===========================================================================AS
@@ -1090,10 +1100,8 @@ PROGRAM Implicit_MPM_eartquake
     mbod(bod)%mf_force   = zero
     
     ! freefield variables
-    right_penpos         = zero
-    right_penpos_count   = 0
-    left_penpos          = zero
-    left_penpos_count    = 0
+    penpos_count         = 0
+    penpos_displacement  = zero
     penalized_stiffness  = zero
     
     ! GIMP variables
@@ -1405,9 +1413,9 @@ PROGRAM Implicit_MPM_eartquake
       !*** AS's Thesis
       !--- Determine freefield boundaries displacement
       CALL get_ff_displacement(         &
-        mpm_disp=left_penpos,           &
-        mpm_counter=left_penpos_count,  &
-        mpm_bc_elements=left_boundary,  &
+        mpm_disp=penpos_displacement,   &
+        mpm_counter=penpos_count,       &
+        iel_boundary=iel_boundary,      &
         mpm_g_num=g_num,                &
         mpm_nf=mbod(1)%nf,              &
         ff_disp=mbod(2)%x1,             &
@@ -1415,24 +1423,9 @@ PROGRAM Implicit_MPM_eartquake
         ff_nf=mbod(2)%nf                &
       )
         
-      CALL get_ff_displacement(         &
-        mpm_disp=right_penpos,          &
-        mpm_counter=right_penpos_count, &
-        mpm_bc_elements=right_boundary, &
-        mpm_g_num=g_num,                &
-        mpm_nf=mbod(1)%nf,              &
-        ff_disp=mbod(3)%x1,             &
-        ff_g_num=mbod(3)%g_num,         &
-        ff_nf=mbod(3)%nf                &
-      )
-        
       !--- Apply penalty to modified stiffness matrix (kp) and form boundary force
       DO i=1,mbod(1)%neq
-        IF(left_penpos_count(i)>0)THEN
-          mbod(1)%kp(mbod(1)%kdiag(i)) = mbod(1)%kp(mbod(1)%kdiag(i)) + penalty
-          penalized_stiffness(i) = penalized_stiffness(i) + mbod(1)%kp(mbod(1)%kdiag(i))
-        END IF
-        IF(right_penpos_count(i)>0)THEN
+        IF(penpos_count(i)>0)THEN
           mbod(1)%kp(mbod(1)%kdiag(i)) = mbod(1)%kp(mbod(1)%kdiag(i)) + penalty
           penalized_stiffness(i) = penalized_stiffness(i) + mbod(1)%kp(mbod(1)%kdiag(i))
         END IF
@@ -1751,34 +1744,21 @@ PROGRAM Implicit_MPM_eartquake
     !*** AS's Thesis
     ! Determine freefield boundaries displacement in the MPM domain
     CALL get_ff_displacement(         &
-      mpm_disp=left_penpos,           &
-      mpm_counter=left_penpos_count,  &
-      mpm_bc_elements=left_boundary,  &
+      mpm_disp=penpos_displacement,   &
+      mpm_counter=penpos_count,       &
+      iel_boundary=iel_boundary,      &
       mpm_g_num=g_num,                &
       mpm_nf=mbod(1)%nf,              &
       ff_disp=mbod(2)%x1,             &
       ff_g_num=mbod(2)%g_num,         &
       ff_nf=mbod(2)%nf                &
     )
-    CALL get_ff_displacement(         &
-      mpm_disp=right_penpos,          &
-      mpm_counter=right_penpos_count, &
-      mpm_bc_elements=right_boundary, &
-      mpm_g_num=g_num,                &
-      mpm_nf=mbod(1)%nf,              &
-      ff_disp=mbod(3)%x1,             &
-      ff_g_num=mbod(3)%g_num,         &
-      ff_nf=mbod(3)%nf                &
-    )
       
     !*** AS's Thesis
     ! Calculate boundary penalized force
     DO i=1,mbod(1)%neq
-      IF(left_penpos_count(i) > 0)THEN
-        mbod(1)%f_ff(i) = left_penpos(i) * penalized_stiffness(i)
-      END IF
-      IF(right_penpos_count(i) > 0)THEN
-        mbod(1)%f_ff(i) = right_penpos(i) * penalized_stiffness(i)
+      IF(penpos_count(i) > 0)THEN
+        mbod(1)%f_ff(i) = penpos_displacement(i) * penalized_stiffness(i)
       END IF
     END DO
 
@@ -2241,7 +2221,23 @@ PROGRAM Implicit_MPM_eartquake
     IF( left_boundary(i)>MAXINT-1 ) print *, "corresponding left boundary element", i, "is not found"
     left_boundary(i) = ((i+offset_y) - 1.0)*nx1 + left_boundary(i)
   END DO
-  
+  ! List all the boundary MPM cells and its corresponding freefield cells
+  iel_boundary=0; k=1
+  DO i=1,size(left_boundary) 
+    iel_boundary(1,k) = i
+    iel_boundary(2,k) = left_boundary(i)
+    k=k+1
+  END DO
+  DO i=1,size(right_boundary) 
+    iel_boundary(1,k) = i
+    iel_boundary(2,k) = right_boundary(i)
+    k=k+1
+  END DO
+  DO i=left_boundary(size(left_boundary)), right_boundary(size(right_boundary))
+    iel_boundary(1,k) = size(left_boundary)
+    iel_boundary(2,k) = i
+    k=k+1
+  END DO
   
   !=============================================================================AS
   ! Recreate boundary conditions (determine nf and calculate neq)
@@ -2283,12 +2279,10 @@ PROGRAM Implicit_MPM_eartquake
     
     !*** AS's Thesis
     ! allocate penalty position marker
-    DEALLOCATE(left_penpos,left_penpos_count,right_penpos,right_penpos_count,penalized_stiffness)
-    ALLOCATE(                               &
-      left_penpos(0:mbod(bod)%neq),         &
-      left_penpos_count(0:mbod(bod)%neq),   &
-      right_penpos(0:mbod(bod)%neq),        &
-      right_penpos_count(0:mbod(bod)%neq),  &
+    DEALLOCATE(penpos_displacement,penpos_count,penalized_stiffness)
+    ALLOCATE(                                 &
+      penpos_displacement(0:mbod(bod)%neq),   &
+      penpos_count(0:mbod(bod)%neq),          &
       penalized_stiffness(0:mbod(bod)%neq))
   
     !-------------------------------------------------------------------------AS

@@ -1,0 +1,47 @@
+Block  2  20.0 10.0  0.0  
+20  10
+2 1
+1 
+2.65  8000  0.30  1000.0  3.0  20.0  
+0.002  0.50  1  1.0e-8 50 0.1
+
+
+!-------Description data file ---------
+! First first row: entire domain of the benchmark problem
+! First row(dimensions of slope): name,slopeopt,w1,s1,w2,h1,h2
+! Seond row(initial elements in slope): nx1,nx2,ny1,ny2
+! Third row(tipes of soils): np_types
+! Fourth row(properties of soil):phi, cohesion peak, cohesion final, psi, density, e, v
+! Fifth row(initial elements of block): name, slopeopt,w1,h1,s1,nex,ney
+! Sixth row(tipes of soils): np_types
+! Seventh row:density, E, v
+! Eight row: Distance between two bodies (in elements, not units)
+! Eight row:dtime, ko, aiters
+! Ninth row:tolerance, iterations
+! tenth row:reduction times
+! eleventh row: values of the reductions
+
+!Block  2  1.0 1.0  0.0  
+!4  4
+!1 9
+
+!NOTE: all elements in the slope should have the same size in x and y direction
+!      the problem is if the elements have different size the new back mesh cannot
+!      be compatible with the material points
+
+! Block  2  20.0 10.0  0.0  
+! 20  10
+! 2 1
+! 1 
+! 2.65  5.0e3  0.30  1000.0  3.0  20.0  
+! 0.001  0.50  1  1.0e-8 50 0.1
+
+! Block  2  4.0 10.0 0.0 0.0 0.0  
+! 4 10 0 0
+! 1 
+! 2.65  2500  0.3  1.0  1.0  
+! 0.005  0.50  1  1.0e-8 500  100  
+
+
+
+
