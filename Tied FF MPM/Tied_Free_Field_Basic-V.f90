@@ -474,9 +474,9 @@ END DO count_nodes
      !-are the Free-Fields (i.e. 1D columns working individually with Tied-Degrees).
      !-----------------------------------------------------------------------------------------
      IF(bod>1)THEN
-     Tied_degree: DO i=1,mbod(bod)%ney*2+1
-         mbod(bod)%nf(1:2,mbod(bod)%tied_nn(i,2))=mbod(bod)%nf(1:2,mbod(bod)%tied_nn(i,1))
-     END DO Tied_degree
+       Tied_degree: DO i=1,mbod(bod)%ney*2+1
+           mbod(bod)%nf(1:2,mbod(bod)%tied_nn(i,2))=mbod(bod)%nf(1:2,mbod(bod)%tied_nn(i,1))
+       END DO Tied_degree
      END IF
      
      ALLOCATE(mbod(bod)%d1x1(0:mbod(bod)%neq),mbod(bod)%d2x1(0:mbod(bod)%neq),                      &

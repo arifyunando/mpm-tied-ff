@@ -81,7 +81,7 @@ PROGRAM Implicit_MPM_eartquake
     gc(:),eldg(:),sigma_1(:),sigma_2(:),vmfl(:),vmfl_t(:,:),                    &
     dvmfl(:),qmat(:,:),caflow(:),trial(:),vmfla(:),vmflq(:),                    &
     dsigma(:),Freact(:),Dsigma1(:),Dsigma2(:),Dsigmae2(:),                      &
-    flowg(:),Deps(:),sigma2(:),flowf(:),epsinv_acum(:),depst(:),                 &
+    flowg(:),Deps(:),sigma2(:),flowf(:),epsinv_acum(:),depst(:),                &
     Devstress(:),deriv_gauss(:,:),bee_gauss(:,:),gauss_stress(:),               &
     scalar_stress(:),der_gauss(:,:),fun_gauss(:),sigma_trial(:),                &
     eldGIMP(:),sp_coord(:,:),lp_coord(:,:),km_gauss(:,:),mm_gimp(:,:),          &
@@ -113,12 +113,12 @@ PROGRAM Implicit_MPM_eartquake
   
   REAL(iwp),ALLOCATABLE::ini_volume(:),gm_coord(:,:),m_coord(:,:),              &
     mweights(:),m_mass(:),m_volume(:),ini_density(:),m_stress(:,:),             &
-    m_velocity(:,:),ins_acum(:,:),nod_stress(:,:),d1x1(:,:),                       &
+    m_velocity(:,:),ins_acum(:,:),nod_stress(:,:),d1x1(:,:),                    &
     diag(:,:),d2x1(:),m_mvp(:,:),m_mva(:),ddylds(:),                            &
     accp(:,:),acc(:),vcc(:),vccp(:,:),ins(:,:),stress(:),ecm_acum(:,:),ecm(:,:)
 
-  REAL(iwp),ALLOCATABLE::ddsddt(:),drplde(:),drpldt(:),stran(:),              &
-    time(:),predef(:),dpred(:),drot(:,:),dfgrd0(:,:),dfgrd1(:,:),      &
+  REAL(iwp),ALLOCATABLE::ddsddt(:),drplde(:),drpldt(:),stran(:),                &
+    time(:),predef(:),dpred(:),drot(:,:),dfgrd0(:,:),dfgrd1(:,:),               &
     stressumat(:),epsumat(:),deeumat(:,:),statev(:,:)
 
   
@@ -136,10 +136,10 @@ PROGRAM Implicit_MPM_eartquake
   ! read material properties
   OPEN(400,FILE='Input/parumat.dat',status='old')
   READ(400,*)npropsum
-  ALLOCATE(                                                                 &
-    ddsddt(nstumat),drplde(nstumat),stran(nstumat),                         &
-    props(npropsum),stressumat(nstumat),epsumat(nstumat),                   &
-    deeumat(nstumat,nstumat)                                                &
+  ALLOCATE(                                                 &
+    ddsddt(nstumat),drplde(nstumat),stran(nstumat),         &
+    props(npropsum),stressumat(nstumat),epsumat(nstumat),   &
+    deeumat(nstumat,nstumat)                                &
   )
   READ(400,*)props
 
@@ -339,9 +339,6 @@ PROGRAM Implicit_MPM_eartquake
   !===========================================================================AS
   
   Mesh_create: DO bod=1,size(mbod)
-    row=1; column=1
-    A=0; Bi=0; dist_x=0
-    
     !-------------------------------------------------------------------------AS
     ! Determine Node Locations and Generate Mesh (nn, nels, nmps are known)
     !-------------------------------------------------------------------------AS
@@ -351,6 +348,8 @@ PROGRAM Implicit_MPM_eartquake
     CALL emb_2d_bc2(mbod(bod)%nex,0,mbod(bod)%ney,mbod(bod)%newel,mbod(bod)%nf)
 
     !- Loop the elements to determine the global node and element numbering
+    row=1; column=1
+    A=0; Bi=0; dist_x=0
     DO iel=1,mbod(bod)%nels
       CALL emb_2d_geom2(iel,bod,mbod(bod)%nex,mbod(bod)%ney,mbod(bod)%s1,mbod(bod)%newel,       &
         mbod(bod)%slopeel,row,column,mbod(bod)%slope1,mbod(bod)%w1,mbod(bod)%h1,coord,num,A,Bi, &
@@ -516,7 +515,7 @@ PROGRAM Implicit_MPM_eartquake
   END DO  
 
   ! Define the geometry of the background mesh
-  offset_y = 1; offset_x=30
+  offset_y = 1; offset_x=4
   nx1=dist_x + offset_x ! add 30 columns of elements to the right of the domain
   ny1=dist_y + offset_y ! add 1 row of elements at the bottom of the domain
   w1=cellsize*nx1 ! Size of domain in x-dir in units of distance
@@ -567,7 +566,7 @@ PROGRAM Implicit_MPM_eartquake
     ALLOCATE(mbod(bod)%base_nn(nn))
   END DO
   
-  ALLOCATE(iel_boundary(2, 2*mbod(2)%ney + nx1))
+  ALLOCATE(iel_boundary(2, nels))
 
   delta=0.0
   delta(1,1)=1.0
@@ -613,9 +612,9 @@ PROGRAM Implicit_MPM_eartquake
       
       !*** AS's Thesis
       ! Check whether element is a boundary element
-      IF(rowy-offset_y <= size(right_boundary))THEN
-        IF(right_boundary(rowy-offset_y) < colx) right_boundary(rowy-offset_y) = colx
-        IF(left_boundary(rowy-offset_y) > colx) left_boundary(rowy-offset_y) = colx
+      IF(rowy - mbod(bod)%dist_y > 0)THEN
+        IF(right_boundary(rowy-mbod(bod)%dist_y) < colx) right_boundary(rowy-mbod(bod)%dist_y) = colx
+        IF(left_boundary(rowy-mbod(bod)%dist_y) > colx) left_boundary(rowy-mbod(bod)%dist_y) = colx
       END IF
 
       ! Locate local position of material point 'i' in element 'ielloc'
@@ -648,11 +647,11 @@ PROGRAM Implicit_MPM_eartquake
   ! Check boundary element integrity and determine actual element number
   DO i=1,size(right_boundary)
     IF( right_boundary(i)<1 ) print *, "corresponding right boundary element", i, "is not found"
-    right_boundary(i) = ((i+offset_y) - 1.0)*nx1 + right_boundary(i)
+    right_boundary(i) = ((i+mbod(1)%dist_y) - 1.0)*nx1 + right_boundary(i)
   END DO
   DO i=1,size(left_boundary)
     IF( left_boundary(i)>MAXINT-1 ) print *, "corresponding left boundary element", i, "is not found"
-    left_boundary(i) = ((i+offset_y) - 1.0)*nx1 + left_boundary(i)
+    left_boundary(i) = ((i+mbod(1)%dist_y) - 1.0)*nx1 + left_boundary(i)
   END DO
   ! List all the boundary MPM cells and its corresponding freefield cells
   iel_boundary=0; k=1
@@ -666,10 +665,12 @@ PROGRAM Implicit_MPM_eartquake
     iel_boundary(2,k) = right_boundary(i)
     k = k+1
   END DO
-  DO i=left_boundary(size(left_boundary)), right_boundary(size(right_boundary))
-    iel_boundary(1,k) = size(left_boundary)
-    iel_boundary(2,k) = i
-    k = k+1
+  DO j=size(left_boundary),size(left_boundary)
+    DO i=left_boundary(j), right_boundary(j)
+      iel_boundary(1,k) = j
+      iel_boundary(2,k) = i
+      k = k+1
+    END DO
   END DO
 
   ! This flagging process for FEM relies on the stress points are indexed in the order of element number
@@ -770,7 +771,7 @@ PROGRAM Implicit_MPM_eartquake
     
     !- Mark nf of right side nodes to be equal with the left side nodes
     DO i=1,size(mbod(bod)%tied_nn, 1)
-      IF(mbod(bod)%tied_nn(i,1))THEN
+      IF(mbod(bod)%tied_nn(i,1)>0)THEN
         mbod(bod)%nf(:,mbod(bod)%tied_nn(i,2))=mbod(bod)%nf(:,mbod(bod)%tied_nn(i,1))
       END IF
     END DO
@@ -851,7 +852,7 @@ PROGRAM Implicit_MPM_eartquake
   !*** AS's Thesis
   ! allocate penalty position marker
   ALLOCATE(                               &
-    penpos_displacement(0:mbod(1)%neq),    &
+    penpos_displacement(0:mbod(1)%neq),   &
     penpos_count(0:mbod(1)%neq),          &
     penalized_stiffness(0:mbod(1)%neq))
 
@@ -905,7 +906,11 @@ PROGRAM Implicit_MPM_eartquake
   DO bod=2,size(mbod)
     mbod(bod)%ground_acc=mbod(1)%ground_acc
   END DO
-
+  
+  ! Adjust ground acceleration multiplier
+  DO bod=1,size(mbod)
+    mbod(bod)%ground_acc=mbod(bod)%ground_acc*3.0_iwp
+  END DO
 
   !===========================================================================AS
   ! Initial Conditions (variables defined here must not be reset, only updated)
@@ -930,10 +935,11 @@ PROGRAM Implicit_MPM_eartquake
   !---------------------------------------------------------------------------AS
   ! Initial stresses (k0 procedure)
   !---------------------------------------------------------------------------AS
-
+  
+  HSURF = maxval(mbod(2)%g_coord(2,:))
   DO bod=1,size(mbod)
     Ini_stress_loop:DO i=1,mbod(bod)%nmps
-      mbod(bod)%m_stress(2,i) = mbod(bod)%m_dens(i)*10.0_iwp * (mbod(bod)%gm_coord(2,i)-HSURF)
+      mbod(bod)%m_stress(2,i) = mbod(bod)%m_dens(i)*Gravf * (mbod(bod)%gm_coord(2,i)-HSURF)
       mbod(bod)%m_stress(1,i) = mbod(bod)%m_stress(2,i)*k0
       mbod(bod)%m_stress(3,i) = zero
       mbod(bod)%m_stress(4,i) = mbod(bod)%m_stress(1,i)
@@ -1054,7 +1060,7 @@ PROGRAM Implicit_MPM_eartquake
         devstress=mbod(bod)%Devstress,      &
         meanstress=mbod(bod)%mean_stress,   &
         mpyield=mbod(bod)%mpyield,          &
-        directory="Output\Paraview_Point",  &
+        directory="Output\Paraview_Point\", &
         argv="FF_Right"                     &
       )    
     END IF
@@ -1067,7 +1073,7 @@ PROGRAM Implicit_MPM_eartquake
 
   stable=.true.
   step=0
-  time_steps: DO w=1,100000
+  time_steps: DO w=1,accdata
   step=step+1 
 
   !===========================================================================AS
@@ -1594,7 +1600,7 @@ PROGRAM Implicit_MPM_eartquake
         DO i=1,(mbod(bod)%ney+1)*(mbod(bod)%nex)
           IF(mbod(bod)%g_coord(2,i)<lowbound+0.01_iwp)THEN
             mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i)) = mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i)) + &
-                                                             mbod(bod)%ground_acc(w)*2.0_iwp -                &
+                                                             mbod(bod)%ground_acc(w) -                        &
                                                              mbod(bod)%kinup_d2x1(mbod(bod)%nf(1,i))
             mbod(bod)%kinup_Ground_d2x1(0)=zero
           END IF    
@@ -1713,7 +1719,8 @@ PROGRAM Implicit_MPM_eartquake
       ! Solve the system of equations (Ma+Cv+Ku = F)
       ! pardiso (pt, maxfct, mnum, mtype, phase, n, a, ia, ja, perm, nrhs, iparm, msglvl, b, x, error)
       ! A*X = B ; X = mbod(bod)%loads(1:mbod(bod)%neq) ; B = mbod(bod)%residual(1:mbod(bod)%neq)
-      mbod(bod)%iparm(8)  = 10 ! max numbers of iterative refinement steps
+      mbod(bod)%residual = zero
+      mbod(bod)%iparm(8) = 10 ! max numbers of iterative refinement steps
       phase = 33  ! solve equations
       call pardiso(                          &
         mbod(bod)%pt,                        &
@@ -1749,26 +1756,26 @@ PROGRAM Implicit_MPM_eartquake
       iel_boundary=iel_boundary,      &
       mpm_g_num=g_num,                &
       mpm_nf=mbod(1)%nf,              &
-      ff_disp=mbod(2)%x1,             &
+      ff_disp=mbod(2)%residual,       &
       ff_g_num=mbod(2)%g_num,         &
       ff_nf=mbod(2)%nf                &
     )
       
-    !*** AS's Thesis
-    ! Calculate boundary penalized force
-    DO i=1,mbod(1)%neq
-      IF(penpos_count(i) > 0)THEN
-        mbod(1)%f_ff(i) = penpos_displacement(i) * penalized_stiffness(i)
-      END IF
-    END DO
-
 
     ! Solve MPM system of equations, obtain displacements
     MPM_DISPLACEMENTS: DO bod=1,1
       mbod(bod)%loads=zero
       mbod(bod)%loads=mbod(bod)%gravlo - mbod(bod)%ddylds - &
-                      mbod(bod)%vcm - mbod(bod)%cdamp +     &
-                      mbod(bod)%f_ff
+                      mbod(bod)%vcm - mbod(bod)%cdamp
+      
+      !*** AS's Thesis
+      ! Calculate boundary penalized force
+      DO i=1,mbod(bod)%neq
+        IF(penpos_count(i) > 0)THEN
+          mbod(bod)%loads(i) = penpos_displacement(i) * penalized_stiffness(i)
+        END IF
+      END DO
+      
       mbod(bod)%loads(0)=zero 
       IF(DEBUG) write(800, '((A15":"), *(E15.5 ","))'), '"loads"',mbod(1)%loads
       
@@ -2045,7 +2052,7 @@ PROGRAM Implicit_MPM_eartquake
       CLOSE(800)
       OPEN(800,FILE='Output/mpcoord'//'.txt', status="replace")
     END IF
-    PRINT '("Steps :" (I10) "/" (I10))', step, 100000
+    PRINT '("Steps :" (I10) "/" (I10))', step, accdata
     DO bod=1,size(mbod)
       IF(bod==1)THEN 
         CALL IO_PARAVIEW(                     &
@@ -2184,9 +2191,9 @@ PROGRAM Implicit_MPM_eartquake
       
       !*** AS's Thesis
       ! Check whether element is a boundary element
-      IF(rowy-offset_y <= size(right_boundary))THEN
-        IF(right_boundary(rowy-offset_y) < colx) right_boundary(rowy-offset_y) = colx
-        IF(left_boundary(rowy-offset_y) > colx) left_boundary(rowy-offset_y) = colx
+      IF(rowy - mbod(bod)%dist_y > 0)THEN
+        IF(right_boundary(rowy-mbod(bod)%dist_y) < colx) right_boundary(rowy-mbod(bod)%dist_y) = colx
+        IF(left_boundary(rowy-mbod(bod)%dist_y) > colx) left_boundary(rowy-mbod(bod)%dist_y) = colx
       END IF
       
       ! Determine particle local coordinates w.r.t its element ielloc
@@ -2215,11 +2222,11 @@ PROGRAM Implicit_MPM_eartquake
   ! Check boundary element integrity and determine actual element number
   DO i=1,size(right_boundary)
     IF( right_boundary(i)<1 ) print *, "corresponding right boundary element", i, "is not found"
-    right_boundary(i) = ((i+offset_y) - 1.0)*nx1 + right_boundary(i)
+    right_boundary(i) = ((i+mbod(bod)%dist_y) - 1.0)*nx1 + right_boundary(i)
   END DO
   DO i=1,size(left_boundary)
     IF( left_boundary(i)>MAXINT-1 ) print *, "corresponding left boundary element", i, "is not found"
-    left_boundary(i) = ((i+offset_y) - 1.0)*nx1 + left_boundary(i)
+    left_boundary(i) = ((i+mbod(bod)%dist_y) - 1.0)*nx1 + left_boundary(i)
   END DO
   ! List all the boundary MPM cells and its corresponding freefield cells
   iel_boundary=0; k=1
@@ -2233,10 +2240,12 @@ PROGRAM Implicit_MPM_eartquake
     iel_boundary(2,k) = right_boundary(i)
     k=k+1
   END DO
-  DO i=left_boundary(size(left_boundary)), right_boundary(size(right_boundary))
-    iel_boundary(1,k) = size(left_boundary)
-    iel_boundary(2,k) = i
-    k=k+1
+  DO j=size(left_boundary),size(left_boundary)
+    DO i=left_boundary(j), right_boundary(j)
+      iel_boundary(1,k) = j
+      iel_boundary(2,k) = i
+      k = k+1
+    END DO
   END DO
   
   !=============================================================================AS

@@ -128,18 +128,18 @@ CONTAINS
       ! get g in mpm & ff from element number
       g_mp = mpm_nf(2,mpm_g_num(:,iel_bc_mpm))
       g_ff = ff_nf(2,ff_g_num(:,iel_bc_ff))
-    
+      
       ! take displacement with from ff to mpm and add counter
       mpm_disp(g_mp) = mpm_disp(g_mp) + ff_disp(g_ff)
       mpm_counter(g_mp) = mpm_counter(g_mp) + 1
     END DO
-    ! cleanup memory
-    mpm_disp(0)=0.0_iwp; mpm_counter(0)=0
     
     ! normalize displacement
     DO i=0, size(mpm_disp)-1
       IF(mpm_counter(i) > 0) mpm_disp(i) = mpm_disp(i) / mpm_counter(i)
     END DO
+    
+    ! cleanup memory
     mpm_disp(0)=0.0_iwp; mpm_counter(0)=0
   END SUBROUTINE get_ff_displacement
   

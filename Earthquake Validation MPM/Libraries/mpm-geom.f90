@@ -211,117 +211,117 @@ SUBROUTINE emb_2d_geom2(iel,bod,nx1,ny1,s1,newel,slopeel,row,column,slope1,w1,h1
     ! elements numbered in the x-direction. Considering only slope without
     ! foundation soil
     !
-     IMPLICIT NONE
-     INTEGER,PARAMETER::iwp=SELECTED_REAL_KIND(15)
-     REAL(iwp),INTENT(IN)::w1,h1,s1
-     INTEGER,INTENT(IN)::iel,nx1,ny1,newel,slopeel,slopeopt,bod,dist_x,dist_y
-     INTEGER,INTENT(INOUT)::row,column,slope1,A,B
-     REAL(iwp),INTENT(OUT)::coord(:,:) !!coord(4,2)
-     INTEGER,INTENT(OUT)::num(:)
-     REAL(iwp)::dimy,dimx,facs,frh,zero=0.0_iwp,pt5=0.5_iwp,one=1.0_iwp,   &
-                slopelong,dimx2
-     INTEGER::nxe,nye,nc,nt,ip,iq,ntotal
-     nxe=nx1  !numero de elementos en X
-     nye=ny1   !numero de elementos en Y
-     nt=nx1*ny1   !numero de elementos en la parte superior sin la pendiente
-     ntotal=nt+slopeel
-     nc=(nye+1)*nx1+ny1   !ECUACION MODIFICADA PARA 4 NODOS CORRECTA
-     dimy=-h1/ny1          !element dimension in y direction
-     dimx=w1/nx1     !element dimension in x direction
-     IF(newel>0.0)dimx2=s1/newel
-     IF(newel==0.0)dimx2=0.0
-     facs=zero
-     frh=zero
+    IMPLICIT NONE
+    INTEGER,PARAMETER::iwp=SELECTED_REAL_KIND(15)
+    REAL(iwp),INTENT(IN)::w1,h1,s1
+    INTEGER,INTENT(IN)::iel,nx1,ny1,newel,slopeel,slopeopt,bod,dist_x,dist_y
+    INTEGER,INTENT(INOUT)::row,column,slope1,A,B
+    REAL(iwp),INTENT(OUT)::coord(:,:) !!coord(4,2)
+    INTEGER,INTENT(OUT)::num(:)
+    REAL(iwp)::dimy,dimx,facs,frh,zero=0.0_iwp,pt5=0.5_iwp,one=1.0_iwp,   &
+              slopelong,dimx2
+    INTEGER::nxe,nye,nc,nt,ip,iq,ntotal
+    nxe=nx1  !numero de elementos en X
+    nye=ny1   !numero de elementos en Y
+    nt=nx1*ny1   !numero de elementos en la parte superior sin la pendiente
+    ntotal=nt+slopeel
+    nc=(nye+1)*nx1+ny1   !ECUACION MODIFICADA PARA 4 NODOS CORRECTA
+    dimy=-h1/ny1          !element dimension in y direction
+    dimx=w1/nx1     !element dimension in x direction
+    IF(newel>0.0)dimx2=s1/newel
+    IF(newel==0.0)dimx2=0.0
+    facs=zero
+    frh=zero
     
-     IF(column==1 .and. row==1 .and. iel==1)THEN
-       num(1)=2
-       num(2)=1
-       num(3)=num(1)+ny1
-       num(4)=num(3)+1
-       A=num(3)
-       B=num(4)
+    IF(column==1 .and. row==1 .and. iel==1)THEN
+      num(1)=2
+      num(2)=1
+      num(3)=num(1)+ny1
+      num(4)=num(3)+1
+      A=num(3)
+      B=num(4)
     
-       !This are the GIMP coordinates, including the boundary elements   
-       !x coordenates
-        coord(1,1)=dimx*dist_x
-        coord(2,1)=dimx*dist_x
-        coord(3,1)=dimx*(dist_x+1)   
-        coord(4,1)=dimx*(dist_x+1)
-       !y coordenates
-        coord(1,2)=(row+dist_y)*dimy
-        coord(2,2)=dist_y*dimy
-        coord(3,2)=dist_y*dimy
-        coord(4,2)=(row+dist_y)*dimy
+      !This are the GIMP coordinates, including the boundary elements   
+      !x coordenates
+      coord(1,1)=dimx*dist_x
+      coord(2,1)=dimx*dist_x
+      coord(3,1)=dimx*(dist_x+1)   
+      coord(4,1)=dimx*(dist_x+1)
+      !y coordenates
+      coord(1,2)=(row+dist_y)*dimy
+      coord(2,2)=dist_y*dimy
+      coord(3,2)=dist_y*dimy
+      coord(4,2)=(row+dist_y)*dimy
     
-     END IF
+    END IF
     
-     IF(column==1.and.row>1)THEN
-       num(1)=row+1
-       num(2)=num(1)-1
-       num(3)=num(1)+ny1
-       num(4)=num(3)+1
-       A=num(3)
-       B=num(4)
-       !This are the GIMP coordinates, including the boundary elements   
-       !x coordenates
-        coord(1,1)=dimx*(column+dist_x-1)
-        coord(2,1)=dimx*(column+dist_x-1)
-        coord(3,1)=dimx*(column+dist_x)  
-        coord(4,1)=dimx*(column+dist_x)
-       !y coordenates
-        coord(1,2)=(row+dist_y)*dimy
-        coord(2,2)=((row-1)+dist_y)*dimy
-        coord(3,2)=((row-1)+dist_y)*dimy
-        coord(4,2)=(row+dist_y)*dimy
-      END IF  
+    IF(column==1.and.row>1)THEN
+      num(1)=row+1
+      num(2)=num(1)-1
+      num(3)=num(1)+ny1
+      num(4)=num(3)+1
+      A=num(3)
+      B=num(4)
+      !This are the GIMP coordinates, including the boundary elements   
+      !x coordenates
+      coord(1,1)=dimx*(column+dist_x-1)
+      coord(2,1)=dimx*(column+dist_x-1)
+      coord(3,1)=dimx*(column+dist_x)  
+      coord(4,1)=dimx*(column+dist_x)
+      !y coordenates
+      coord(1,2)=(row+dist_y)*dimy
+      coord(2,2)=((row-1)+dist_y)*dimy
+      coord(3,2)=((row-1)+dist_y)*dimy
+      coord(4,2)=(row+dist_y)*dimy
+    END IF  
     
-     IF(column>1.and.row>1.and.column<=nx1+1)THEN
-       num(1)=B
-       num(2)=A
-       num(3)=num(1)+ny1
-       num(4)=num(3)+1
-       A=num(3)
-       B=num(4)
-       !This are the GIMP coordinates, including the boundary elements   
-       !x coordenates
-        coord(1,1)=dimx*(column+dist_x-1)
-        coord(2,1)=dimx*(column+dist_x-1)
-        coord(3,1)=dimx*(column+dist_x)  
-        coord(4,1)=dimx*(column+dist_x)
-       !y coordenates
-        coord(1,2)=(row+dist_y)*dimy
-        coord(2,2)=((row-1)+dist_y)*dimy
-        coord(3,2)=((row-1)+dist_y)*dimy
-        coord(4,2)=(row+dist_y)*dimy
-        
-     END IF
-    
-     IF(column<=nx1+1 .and. column>1 .and. row==1)THEN
+    IF(column>1.and.row>1.and.column<=nx1+1)THEN
       num(1)=B
-       num(2)=A
-       num(3)=num(1)+ny1
-       num(4)=num(3)+1
-       A=num(3)
-       B=num(4)
-       !x coordenates
-        coord(1,1)=dimx*(column+dist_x-1)
-        coord(2,1)=dimx*(column+dist_x-1)
-        coord(3,1)=dimx*(column+dist_x)  
-        coord(4,1)=dimx*(column+dist_x)
+      num(2)=A
+      num(3)=num(1)+ny1
+      num(4)=num(3)+1
+      A=num(3)
+      B=num(4)
+      !This are the GIMP coordinates, including the boundary elements   
+      !x coordenates
+      coord(1,1)=dimx*(column+dist_x-1)
+      coord(2,1)=dimx*(column+dist_x-1)
+      coord(3,1)=dimx*(column+dist_x)  
+      coord(4,1)=dimx*(column+dist_x)
+      !y coordenates
+      coord(1,2)=(row+dist_y)*dimy
+      coord(2,2)=((row-1)+dist_y)*dimy
+      coord(3,2)=((row-1)+dist_y)*dimy
+      coord(4,2)=(row+dist_y)*dimy
         
-       IF(column==slope1.and.slopeopt==1)coord(3,1)=coord(2,1)+dimx2/2.0_iwp
-       IF(column==slope1.and.slopeopt==1)coord(4,1)=coord(1,1)+dimx2
+    END IF
     
-       !y coordenates
-        coord(1,2)=(row+dist_y)*dimy
-        coord(2,2)=dist_y*dimy
-        coord(3,2)=dist_y*dimy
-        coord(4,2)=(row+dist_y)*dimy
+    IF(column<=nx1+1 .and. column>1 .and. row==1)THEN
+      num(1)=B
+      num(2)=A
+      num(3)=num(1)+ny1
+      num(4)=num(3)+1
+      A=num(3)
+      B=num(4)
+      !x coordenates
+      coord(1,1)=dimx*(column+dist_x-1)
+      coord(2,1)=dimx*(column+dist_x-1)
+      coord(3,1)=dimx*(column+dist_x)  
+      coord(4,1)=dimx*(column+dist_x)
+        
+      IF(column==slope1.and.slopeopt==1)coord(3,1)=coord(2,1)+dimx2/2.0_iwp
+      IF(column==slope1.and.slopeopt==1)coord(4,1)=coord(1,1)+dimx2
     
-       IF(column==slope1.and.slopeopt==1)coord(3,2)=coord(2,2)+(coord(1,2)-coord(2,2))/2.0_iwp
-     END IF
+      !y coordenates
+      coord(1,2)=(row+dist_y)*dimy
+      coord(2,2)=dist_y*dimy
+      coord(3,2)=dist_y*dimy
+      coord(4,2)=(row+dist_y)*dimy
     
-      IF(column>nx1+1 .and. iel>1)THEN
+      IF(column==slope1.and.slopeopt==1) coord(3,2)=coord(2,2)+(coord(1,2)-coord(2,2))/2.0_iwp
+    END IF
+    
+    IF(column>nx1+1 .and. iel>1)THEN
        num(1)=B
        num(2)=A
        num(3)=num(1)+ny1-(column-nx1-1)
@@ -345,15 +345,16 @@ SUBROUTINE emb_2d_geom2(iel,bod,nx1,ny1,s1,newel,slopeel,row,column,slope1,w1,h1
         coord(4,2)=(row+dist_y)*dimy
         
        IF(column==slope1.and.slopeopt==1)coord(3,2)=coord(2,2)+(coord(1,2)-coord(2,2))/2.0_iwp
-     END IF
+    END IF
     
-       IF(column==slope1)THEN
-         row=row+1
-         slope1=slope1+1
-         IF(slopeopt==2)slope1=slope1-1
-         column=0
-       END IF
-       column=column+1
+    IF(column==slope1)THEN
+      row=row+1
+      slope1=slope1+1
+      IF(slopeopt==2)slope1=slope1-1
+      column=0
+    END IF
+    
+    column=column+1
     
     RETURN
 END SUBROUTINE emb_2d_geom2
