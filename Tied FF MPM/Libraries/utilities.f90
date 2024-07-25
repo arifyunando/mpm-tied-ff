@@ -202,7 +202,7 @@ contains
     if (present(directory)) s_directory = directory
     if (present(argv)) s_argv = argv
     ! CALL EXECUTE_COMMAND_LINE("mkdir "//trim(s_directory))
-    unit=10+input
+    unit=1000
     WRITE(cnumber, '(i8.8)') input
     OPEN(unit,FILE=trim(s_directory)//trim(s_argv)//"_"//trim(cnumber)//'.inp')
 
@@ -254,7 +254,7 @@ contains
 
 
   SUBROUTINE IO_PARAVIEW(input,node_type,coord,num,nf,kdiag,diag,loads,         &
-    ddylds,gravlo,vcm,cdamp,f_earth,f_ff,d1x1,d2x1,kv,mv,directory,argv)
+    ddylds,gravlo,vcm,cdamp,f_earth,f_ff,x1,d1x1,d2x1,kv,mv,directory,argv)
     !
     ! Subroutine used to save visualization output of computational mesh
     ! https://docs.vtk.org/en/latest/design_documents/VTKFileFormats.html
@@ -270,7 +270,7 @@ contains
     REAL(iwp), OPTIONAL, INTENT(IN) :: loads(:), ddylds(:), gravlo(:), vcm(:), cdamp(:)
     REAL(iwp), OPTIONAL, INTENT(IN) :: diag(:), f_earth(:), f_ff(:)
     REAL(iwp), OPTIONAL, INTENT(IN) :: kv(:), mv(:)
-    REAL(iwp), OPTIONAL, INTENT(IN) :: d1x1(:), d2x1(:)
+    REAL(iwp), OPTIONAL, INTENT(IN) :: x1(:), d1x1(:), d2x1(:)
 
     CHARACTER(128) :: cnumber, s_directory="Results/", s_argv="Paraview"
     INTEGER :: i, iel, nels, nn, unit
@@ -279,7 +279,7 @@ contains
     if (present(directory)) s_directory = directory
     if (present(argv)) s_argv = argv
     ! CALL EXECUTE_COMMAND_LINE("mkdir "//trim(s_directory))
-    unit=10+input
+    unit=1000
     WRITE(cnumber, '(i8.8)') input
     OPEN(unit,FILE=trim(s_directory)//trim(s_argv)//"_"//trim(cnumber)//'.vtk')
 
@@ -382,6 +382,13 @@ contains
           WRITE(unit,'(3f15.6)')f_ff(nf(:,i)+1), zero
       END DO
     END IF F_FREEFIELD
+    
+    NODAL_DISPLACEMENT: IF (present(x1)) THEN
+      WRITE(unit,'(a)')"vectors Displacement float "
+      DO i=1, nn
+          WRITE(unit,'(3f15.6)')x1(nf(:,i)+1), zero
+      END DO
+    END IF NODAL_DISPLACEMENT
 
     NODAL_VELOCITY: IF (present(d1x1)) THEN
       WRITE(unit,'(a)')"vectors Velocity float "

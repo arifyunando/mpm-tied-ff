@@ -128,7 +128,12 @@ PROGRAM Implicit_MPM_eartquake
     
   nlen=7
   argv='Results'
-  OPEN(800,FILE='Output/log.output')
+  OPEN(810,FILE='Output/mpm_disp.dat')
+  OPEN(810,FILE='Output/mpm_vel.dat')
+  OPEN(820,FILE='Output/mpm_acc.dat')
+  OPEN(830,FILE='Output/ff_disp.dat')
+  OPEN(840,FILE='Output/ff_vel.dat')
+  OPEN(850,FILE='Output/ff_acc.dat')
   
   OPEN(10,FILE='Input/Datafound.dat',status='old')
   OPEN(300,FILE='Input/Groundacc.dat',status='old')
@@ -655,14 +660,24 @@ PROGRAM Implicit_MPM_eartquake
   END DO
   ! List all the boundary MPM cells and its corresponding freefield cells
   iel_boundary=0; k=1
+  !DO i=1,size(left_boundary) 
+  !  iel_boundary(1,k) = i
+  !  iel_boundary(2,k) = left_boundary(i)
+  !  k = k+1
+  !END DO
   DO i=1,size(left_boundary) 
     iel_boundary(1,k) = i
-    iel_boundary(2,k) = left_boundary(i)
+    iel_boundary(2,k) = left_boundary(i) - 1
     k = k+1
   END DO
+  !DO i=1,size(right_boundary) 
+  !  iel_boundary(1,k) = i
+  !  iel_boundary(2,k) = right_boundary(i)
+  !  k = k+1
+  !END DO
   DO i=1,size(right_boundary) 
     iel_boundary(1,k) = i
-    iel_boundary(2,k) = right_boundary(i)
+    iel_boundary(2,k) = right_boundary(i) + 1
     k = k+1
   END DO
   DO j=size(left_boundary),size(left_boundary)
@@ -968,6 +983,7 @@ PROGRAM Implicit_MPM_eartquake
         cdamp=mbod(bod)%cdamp,              &
         f_earth=mbod(bod)%f_earth,          &
         f_ff=mbod(bod)%f_ff,                &
+        x1=mbod(bod)%x1,                    &
         d1x1=mbod(bod)%d1x1,                &
         d2x1=mbod(bod)%d2x1,                &
         directory="Output\Paraview_Cells\", &
@@ -1005,6 +1021,7 @@ PROGRAM Implicit_MPM_eartquake
         cdamp=mbod(bod)%cdamp,              &
         f_earth=mbod(bod)%f_earth,          &
         f_ff=mbod(bod)%f_ff,                &
+        x1=mbod(bod)%x1,                    &
         d1x1=mbod(bod)%d1x1,                &
         d2x1=mbod(bod)%d2x1,                &
         directory="Output\Paraview_Cells\", &
@@ -1042,6 +1059,7 @@ PROGRAM Implicit_MPM_eartquake
         cdamp=mbod(bod)%cdamp,              &
         f_earth=mbod(bod)%f_earth,          &
         f_ff=mbod(bod)%f_ff,                &
+        x1=mbod(bod)%x1,                    &
         d1x1=mbod(bod)%d1x1,                &
         d2x1=mbod(bod)%d2x1,                &
         directory="Output\Paraview_Cells\", &
@@ -1073,7 +1091,7 @@ PROGRAM Implicit_MPM_eartquake
 
   stable=.true.
   step=0
-  time_steps: DO w=1,accdata
+  time_steps: DO w=1,accdata + 2000
   step=step+1 
 
   !===========================================================================AS
@@ -1568,7 +1586,7 @@ PROGRAM Implicit_MPM_eartquake
       mbod(bod)%d2x1(i)=mbod(bod)%m_mva(i)/mbod(bod)%diag(i)
     END DO
   END DO 
-
+  
 
   !============================================================================AS
   ! Iteration loops 
@@ -1777,7 +1795,6 @@ PROGRAM Implicit_MPM_eartquake
       END DO
       
       mbod(bod)%loads(0)=zero 
-      IF(DEBUG) write(800, '((A15":"), *(E15.5 ","))'), '"loads"',mbod(1)%loads
       
       CALL spabac(mbod(bod)%kp,mbod(bod)%loads,mbod(bod)%kdiag)  
       mbod(bod)%loads(0)=zero 
@@ -1930,8 +1947,8 @@ PROGRAM Implicit_MPM_eartquake
       END DO
     END DO   
   END DO COMBINED_NR
-
  
+  
   !=============================================================================AS
   ! Calculate new nodal acceleration (d2x1) and velocity (d1x1)
   !=============================================================================AS
@@ -1943,7 +1960,7 @@ PROGRAM Implicit_MPM_eartquake
     mbod(bod)%d1x1    = mbod(bod)%kinup_d1x1
     mbod(bod)%d2x1    = mbod(bod)%kinup_d2x1
   END DO
-
+  
   ! Update the node displacement for visualization
   DO bod=2,size(mbod)
     DO i=1,mbod(bod)%nn
@@ -1979,7 +1996,6 @@ PROGRAM Implicit_MPM_eartquake
 
         CALL eldformgimp(i,eldCMPM,mbod(bod)%x1,mbod(bod)%nf,mbod(bod)%GIMP_nodes,values,mbod(bod)%g_g)
         mbod(bod)%ins(1,i)=DOT_PRODUCT(eldCMPM(1:ndof:2),funextend)
-        mbod(bod)%ins(2,i)=DOT_PRODUCT(eldCMPM(2:ndof:2),funextend)
         mbod(bod)%ins_acum(:,i)=mbod(bod)%ins_acum(:,i)+mbod(bod)%ins(:,i)
         mbod(bod)%gm_coord(:,i)=mbod(bod)%gm_coord(:,i)+mbod(bod)%ins(:,i)
         
@@ -2008,8 +2024,9 @@ PROGRAM Implicit_MPM_eartquake
       mbod(bod)%accb=mbod(bod)%accp
     END IF
   END DO REVERSE_MAPPING
-
   
+
+
   !=============================================================================AS
   ! Numerical Cleanup
   !=============================================================================AS
@@ -2043,15 +2060,15 @@ PROGRAM Implicit_MPM_eartquake
   ! Simulation Output and Visualization
   !=============================================================================AS
  
+  write(800, '(*(E15.5 ","))') mbod(1)%ins_acum
+  write(810, '(*(E15.5 ","))') mbod(1)%m_velocity
+  write(820, '(*(E15.5 ","))') mbod(1)%m_acc
+  write(830, '(*(E15.5 ","))') mbod(2)%ins_acum
+  write(840, '(*(E15.5 ","))') mbod(2)%m_velocity
+  write(850, '(*(E15.5 ","))') mbod(2)%m_acc
+  
   ! -- Loop to save data from both bodies and print it in point_vis
-  printcount = 1
   IF(step/printval*printval==step)THEN
-    printcount = printcount + 1
-    IF (printcount > 5) THEN
-      printcount = 1
-      CLOSE(800)
-      OPEN(800,FILE='Output/mpcoord'//'.txt', status="replace")
-    END IF
     PRINT '("Steps :" (I10) "/" (I10))', step, accdata
     DO bod=1,size(mbod)
       IF(bod==1)THEN 
@@ -2070,6 +2087,7 @@ PROGRAM Implicit_MPM_eartquake
           cdamp=mbod(bod)%cdamp,              &
           f_earth=mbod(bod)%f_earth,          &
           f_ff=mbod(bod)%f_ff,                &
+          x1=mbod(bod)%x1,                    &
           d1x1=mbod(bod)%d1x1,                &
           d2x1=mbod(bod)%d2x1,                &
           directory="Output\Paraview_Cells\", &
@@ -2107,6 +2125,7 @@ PROGRAM Implicit_MPM_eartquake
           cdamp=mbod(bod)%cdamp,              &
           f_earth=mbod(bod)%f_earth,          &
           f_ff=mbod(bod)%f_ff,                &
+          x1=mbod(bod)%x1,                    &
           d1x1=mbod(bod)%d1x1,                &
           d2x1=mbod(bod)%d2x1,                &
           directory="Output\Paraview_Cells\", &
@@ -2144,6 +2163,7 @@ PROGRAM Implicit_MPM_eartquake
           cdamp=mbod(bod)%cdamp,              &
           f_earth=mbod(bod)%f_earth,          &
           f_ff=mbod(bod)%f_ff,                &
+          x1=mbod(bod)%x1,                    &
           d1x1=mbod(bod)%d1x1,                &
           d2x1=mbod(bod)%d2x1,                &
           directory="Output\Paraview_Cells\", &
@@ -2230,15 +2250,25 @@ PROGRAM Implicit_MPM_eartquake
   END DO
   ! List all the boundary MPM cells and its corresponding freefield cells
   iel_boundary=0; k=1
+  !DO i=1,size(left_boundary) 
+  !  iel_boundary(1,k) = i
+  !  iel_boundary(2,k) = left_boundary(i)
+  !  k = k+1
+  !END DO
   DO i=1,size(left_boundary) 
     iel_boundary(1,k) = i
-    iel_boundary(2,k) = left_boundary(i)
-    k=k+1
+    iel_boundary(2,k) = left_boundary(i) - 1
+    k = k+1
   END DO
+  !DO i=1,size(right_boundary) 
+  !  iel_boundary(1,k) = i
+  !  iel_boundary(2,k) = right_boundary(i)
+  !  k = k+1
+  !END DO
   DO i=1,size(right_boundary) 
     iel_boundary(1,k) = i
-    iel_boundary(2,k) = right_boundary(i)
-    k=k+1
+    iel_boundary(2,k) = right_boundary(i) + 1
+    k = k+1
   END DO
   DO j=size(left_boundary),size(left_boundary)
     DO i=left_boundary(j), right_boundary(j)
