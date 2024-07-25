@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VisualStudioProject ProjectCreator="Intel Fortran" Keyword="Application" Version="11.0" ProjectIdGuid="{C79606D3-6FB6-484B-B41B-05C0786D9755}">
+	<Platforms>
+		<Platform Name="Win32"/>
+	</Platforms>
+	<Configurations>
+		<Configuration Name="Debug|Win32" UseCompiler="ifortCompiler" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)">
+			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" WarnInterfaces="true" Traceback="true" BoundsCheck="true" StackFrameCheck="true" RuntimeLibrary="rtMultiThreadedDebugDLL"/>
+			<Tool Name="VFLinkerTool" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateDebugInformation="true" SubSystem="subSystemConsole"/>
+			<Tool Name="VFResourceCompilerTool"/>
+			<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
+			<Tool Name="VFCustomBuildTool"/>
+			<Tool Name="VFPreLinkEventTool"/>
+			<Tool Name="VFPreBuildEventTool"/>
+			<Tool Name="VFPostBuildEventTool"/>
+			<Tool Name="VFManifestTool" SuppressStartupBanner="true"/>
+		</Configuration>
+		<Configuration Name="Release|Win32" UseCompiler="ifortCompiler" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)">
+			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" RuntimeLibrary="rtMultiThreadedDLL"/>
+			<Tool Name="VFLinkerTool" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" SubSystem="subSystemConsole"/>
+			<Tool Name="VFResourceCompilerTool"/>
+			<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
+			<Tool Name="VFCustomBuildTool"/>
+			<Tool Name="VFPreLinkEventTool"/>
+			<Tool Name="VFPreBuildEventTool"/>
+			<Tool Name="VFPostBuildEventTool"/>
+			<Tool Name="VFManifestTool" SuppressStartupBanner="true"/>
+		</Configuration>
+	</Configurations>
+	<Files>
+		<Filter Name="Input"/>
+		<Filter Name="Libraries">
+		<File RelativePath=".\Libraries\fem.f90"/>
+		<File RelativePath=".\Libraries\io.f90"/>
+		<File RelativePath=".\Libraries\Logging.f90"/>
+		<File RelativePath=".\Libraries\mpm-geom.f90"/>
+		<File RelativePath=".\Libraries\mpm-gimp.f90"/>
+		<File RelativePath=".\Libraries\mpm-main.f90"/>
+		<File RelativePath=".\Libraries\mpm-mpm.f90"/>
+		<File RelativePath=".\Libraries\sparse_lib.f90"/>
+		<File RelativePath=".\Libraries\utilities.f90"/></Filter>
+		<Filter Name="Modules"/>
+		<Filter Name="Output">
+		<Filter Name="Archive"/>
+		<Filter Name="Data Analysis">
+		<Filter Name=".ipynb_checkpoints"/>
+		<Filter Name="v1.7.1"/>
+		<Filter Name="v1.7.2"/></Filter>
+		<Filter Name="Paraview_Cells"/>
+		<Filter Name="Paraview_Point"/></Filter>
+		<File RelativePath=".\Earthquake Embankment.f90"/>
+	</Files>
+	<Globals/>
+</VisualStudioProject>

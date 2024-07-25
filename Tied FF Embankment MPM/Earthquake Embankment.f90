@@ -128,12 +128,12 @@ PROGRAM Implicit_MPM_eartquake
     
   nlen=7
   argv='Results'
-  OPEN(800,FILE='Output/mpm_disp.dat')
+  OPEN(800,FILE='Output/mpm_acc.dat')
   OPEN(810,FILE='Output/mpm_vel.dat')
-  OPEN(820,FILE='Output/mpm_acc.dat')
-  OPEN(830,FILE='Output/ff_disp.dat')
+  OPEN(820,FILE='Output/mpm_disp.dat')
+  OPEN(830,FILE='Output/ff_acc.dat')
   OPEN(840,FILE='Output/ff_vel.dat')
-  OPEN(850,FILE='Output/ff_acc.dat')
+  OPEN(850,FILE='Output/ff_disp.dat')
   
   OPEN(10,FILE='Input/Datafound.dat',status='old')
   OPEN(300,FILE='Input/Groundacc.dat',status='old')
@@ -150,12 +150,23 @@ PROGRAM Implicit_MPM_eartquake
 
   ! Read parameter for the MPM body (bod=1) [AS]
   bod=1          
-  mbod(1)%nprops=6 !For Von Mises with softening == 7
-  mbod(1)%ndof=ndof
-  READ(10,*)mbod(bod)%name,mbod(bod)%slopeopt,mbod(bod)%w1,mbod(bod)%h1,mbod(bod)%s1, &
-    mbod(bod)%nex,mbod(bod)%ney,mbod(bod)%dist_x,mbod(bod)%dist_y,mbod(bod)%np_types
+  
+  mbod(bod)%ndof = ndof
+  mbod(bod)%name = "Embankment"
+  mbod(bod)%w1 = 20.0
+  mbod(bod)%h1 = 10.0
+  mbod(bod)%s1 = 0.0
+  
+  mbod(bod)%nex = 20,
+  mbod(bod)%ney = 10,
+  mbod(bod)%dist_x = 4,
+  mbod(bod)%dist_y = 3,
+  mbod(bod)%slopeopt = 2
+
+  mbod(bod)%nprops=6 !For Von Mises with softening == 7
+  mbod(bod)%np_types = 1
   ALLOCATE(mbod(bod)%prop(mbod(bod)%nprops,mbod(bod)%np_types))
-  READ(10,*)mbod(bod)%prop
+  mbod(bod)%prop = [2.65, 2500, 0.30, 1000.0, 3.0, 20.0] 
 
   ! Copy the data from body 1 to freefields [AS]
   DO bod=2,size(mbod)
@@ -2025,7 +2036,34 @@ PROGRAM Implicit_MPM_eartquake
     END IF
   END DO REVERSE_MAPPING
   
-
+  write(800, '(*(E15.5 ","))') mbod(1)%ins
+  write(810, '(*(E15.5 ","))') mbod(1)%m_velocity
+  write(820, '(*(E15.5 ","))') mbod(1)%m_acc
+  write(830, '(*(E15.5 ","))') mbod(2)%ins
+  write(840, '(*(E15.5 ","))') mbod(2)%m_velocity
+  write(850, '(*(E15.5 ","))') mbod(2)%m_acc
+  
+  !IF (step == 851) THEN
+  !  CLOSE(800); CLOSE(810); CLOSE(820)
+  !  CLOSE(830); CLOSE(840); CLOSE(850) 
+  !  OPEN(800,FILE='Output/mpm_acc2.output')
+  !  OPEN(810,FILE='Output/mpm_vel2.output')
+  !  OPEN(820,FILE='Output/mpm_disp2.output')
+  !  OPEN(830,FILE='Output/ff_acc2.output')
+  !  OPEN(840,FILE='Output/ff_vel2.output')
+  !  OPEN(850,FILE='Output/ff_disp2.output')
+  !END IF
+  !
+  !IF (step == 1701) THEN
+  !  CLOSE(800); CLOSE(810); CLOSE(820)
+  !  CLOSE(830); CLOSE(840); CLOSE(850) 
+  !  OPEN(800,FILE='Output/mpm_acc3.output')
+  !  OPEN(810,FILE='Output/mpm_vel3.output')
+  !  OPEN(820,FILE='Output/mpm_disp3.output')
+  !  OPEN(830,FILE='Output/ff_acc3.output')
+  !  OPEN(840,FILE='Output/ff_vel3.output')
+  !  OPEN(850,FILE='Output/ff_disp3.output')
+  !END IF
 
   !=============================================================================AS
   ! Numerical Cleanup
@@ -2060,13 +2098,6 @@ PROGRAM Implicit_MPM_eartquake
   ! Simulation Output and Visualization
   !=============================================================================AS
  
-  write(800, '(*(E15.5 ","))') mbod(1)%ins_acum
-  write(810, '(*(E15.5 ","))') mbod(1)%m_velocity
-  write(820, '(*(E15.5 ","))') mbod(1)%m_acc
-  write(830, '(*(E15.5 ","))') mbod(2)%ins_acum
-  write(840, '(*(E15.5 ","))') mbod(2)%m_velocity
-  write(850, '(*(E15.5 ","))') mbod(2)%m_acc
-  
   ! -- Loop to save data from both bodies and print it in point_vis
   IF(step/printval*printval==step)THEN
     PRINT '("Steps :" (I10) "/" (I10))', step, accdata
