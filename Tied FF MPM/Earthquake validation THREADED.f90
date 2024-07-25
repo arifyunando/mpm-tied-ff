@@ -128,7 +128,7 @@ PROGRAM Implicit_MPM_eartquake
     
   nlen=7
   argv='Results'
-  OPEN(810,FILE='Output/mpm_disp.dat')
+  OPEN(800,FILE='Output/mpm_disp.dat')
   OPEN(810,FILE='Output/mpm_vel.dat')
   OPEN(820,FILE='Output/mpm_acc.dat')
   OPEN(830,FILE='Output/ff_disp.dat')
@@ -660,21 +660,21 @@ PROGRAM Implicit_MPM_eartquake
   END DO
   ! List all the boundary MPM cells and its corresponding freefield cells
   iel_boundary=0; k=1
-  !DO i=1,size(left_boundary) 
-  !  iel_boundary(1,k) = i
-  !  iel_boundary(2,k) = left_boundary(i)
-  !  k = k+1
-  !END DO
+  DO i=1,size(left_boundary) 
+    iel_boundary(1,k) = i
+    iel_boundary(2,k) = left_boundary(i)
+    k = k+1
+  END DO
   DO i=1,size(left_boundary) 
     iel_boundary(1,k) = i
     iel_boundary(2,k) = left_boundary(i) - 1
     k = k+1
   END DO
-  !DO i=1,size(right_boundary) 
-  !  iel_boundary(1,k) = i
-  !  iel_boundary(2,k) = right_boundary(i)
-  !  k = k+1
-  !END DO
+  DO i=1,size(right_boundary) 
+    iel_boundary(1,k) = i
+    iel_boundary(2,k) = right_boundary(i)
+    k = k+1
+  END DO
   DO i=1,size(right_boundary) 
     iel_boundary(1,k) = i
     iel_boundary(2,k) = right_boundary(i) + 1
@@ -1299,7 +1299,7 @@ PROGRAM Implicit_MPM_eartquake
           ! at the end of each element form the modified stiffness matrix (kp or MOD_MTK)
           ! according to the incremental FEM iterations (MOD_MTK = 4MMS/dtim**2 + 2C/dtim + KGC) ; C = fk*KGC + fm*MMS 
           IF(i==nip)THEN
-            fm=0.0_iwp; fk=0.0_iwp
+            fm=0.05_iwp; fk=0.005_iwp
 
             mbod(bod)%KGC = zero
             mbod(bod)%MMS = zero
@@ -1425,7 +1425,7 @@ PROGRAM Implicit_MPM_eartquake
       ! Construct modified stiffness matrix (kp) and Rayleigh damping (cv)
       !-----------------------------------------------------------------------AS
       !fm=0.052359878_iwp;fk=0.000265258_iwp
-      fm=0.0_iwp;fk=0.0_iwp
+      fm=0.05_iwp; fk=0.005_iwp
       mbod(bod)%cv = fm*mbod(bod)%mv + fk*mbod(bod)%kv  ! cv is already in skyline form
       mbod(bod)%kp = 4.0_iwp*mbod(bod)%mv/dtim**2.0_iwp +  &
                      2.0_iwp/dtim*(mbod(bod)%cv) + mbod(bod)%kv
@@ -1619,7 +1619,7 @@ PROGRAM Implicit_MPM_eartquake
           IF(mbod(bod)%g_coord(2,i)<lowbound+0.01_iwp)THEN
             mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i)) = mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i)) + &
                                                              mbod(bod)%ground_acc(w) -                        &
-                                                             mbod(bod)%kinup_d2x1(mbod(bod)%nf(1,i))
+                                                             mbod(bod)%kinup_d2x1(mbod(bod)%nf(1,i))*(1.0_iwp + 1.0_iwp)    
             mbod(bod)%kinup_Ground_d2x1(0)=zero
           END IF    
         END DO
@@ -2250,21 +2250,21 @@ PROGRAM Implicit_MPM_eartquake
   END DO
   ! List all the boundary MPM cells and its corresponding freefield cells
   iel_boundary=0; k=1
-  !DO i=1,size(left_boundary) 
-  !  iel_boundary(1,k) = i
-  !  iel_boundary(2,k) = left_boundary(i)
-  !  k = k+1
-  !END DO
+  DO i=1,size(left_boundary) 
+    iel_boundary(1,k) = i
+    iel_boundary(2,k) = left_boundary(i)
+    k = k+1
+  END DO
   DO i=1,size(left_boundary) 
     iel_boundary(1,k) = i
     iel_boundary(2,k) = left_boundary(i) - 1
     k = k+1
   END DO
-  !DO i=1,size(right_boundary) 
-  !  iel_boundary(1,k) = i
-  !  iel_boundary(2,k) = right_boundary(i)
-  !  k = k+1
-  !END DO
+  DO i=1,size(right_boundary) 
+    iel_boundary(1,k) = i
+    iel_boundary(2,k) = right_boundary(i)
+    k = k+1
+  END DO
   DO i=1,size(right_boundary) 
     iel_boundary(1,k) = i
     iel_boundary(2,k) = right_boundary(i) + 1
