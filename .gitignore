@@ -9,3 +9,5 @@
 *.exe
 *.mod
 *.u2d
+
+.vs
