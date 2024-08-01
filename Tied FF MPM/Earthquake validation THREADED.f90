@@ -1617,9 +1617,9 @@ PROGRAM Implicit_MPM_eartquake
       IF(w<=accdata.and.w>=1)THEN
         DO i=1,(mbod(bod)%ney+1)*(mbod(bod)%nex)
           IF(mbod(bod)%g_coord(2,i)<lowbound+0.01_iwp)THEN
-            mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i)) = mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i)) + &
-                                                             mbod(bod)%ground_acc(w) -                        &
-                                                             mbod(bod)%kinup_d2x1(mbod(bod)%nf(1,i))*(1.0_iwp + 1.0_iwp)    
+            mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i)) = mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i)) - &
+                                                             mbod(bod)%kinup_d2x1(mbod(bod)%nf(1,i)) +        &    
+                                                             mbod(bod)%ground_acc(w)
             mbod(bod)%kinup_Ground_d2x1(0)=zero
           END IF    
         END DO
