@@ -134,6 +134,7 @@ PROGRAM Implicit_MPM_eartquake
   OPEN(830,FILE='Output/ff_disp.dat')
   OPEN(840,FILE='Output/ff_vel.dat')
   OPEN(850,FILE='Output/ff_acc.dat')
+  OPEN(860,FILE='Output/ff_nodal_acc.dat'
   
   OPEN(10,FILE='Input/Benchmark/Datafound.dat',status='old')
   OPEN(300,FILE='Input/Benchmark/Groundacc.dat',status='old')
@@ -965,6 +966,11 @@ PROGRAM Implicit_MPM_eartquake
   !---------------------------------------------------------------------------AS
   ! Initial Configuration (print to paraview)
   !---------------------------------------------------------------------------AS
+  
+  OPEN(860,FILE='Output/mpcoords.dat')
+  write(900, '(*(E15.5 ","))') mbod(1)%gm_coord
+  write(900, '(*(E15.5 ","))') mbod(2)%gm_coord
+  CLOSE(900)
 
   DO bod=1,size(mbod)
     IF(bod==1)THEN 
@@ -2073,6 +2079,7 @@ PROGRAM Implicit_MPM_eartquake
   write(830, '(*(E15.5 ","))') mbod(2)%ins_acum
   write(840, '(*(E15.5 ","))') mbod(2)%m_velocity
   write(850, '(*(E15.5 ","))') mbod(2)%m_acc
+  write(860, '(*(E15.5 ","))') mbod(2)%d2x1
   
   ! -- Loop to save data from both bodies and print it in point_vis
   IF(step/printval*printval==step)THEN
