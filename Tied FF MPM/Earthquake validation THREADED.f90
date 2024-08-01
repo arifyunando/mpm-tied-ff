@@ -1091,7 +1091,7 @@ PROGRAM Implicit_MPM_eartquake
 
   stable=.true.
   step=0
-  time_steps: DO w=1,accdata + 2000
+  time_steps: DO w=1,accdata
   step=step+1 
 
   !===========================================================================AS
@@ -1299,7 +1299,8 @@ PROGRAM Implicit_MPM_eartquake
           ! at the end of each element form the modified stiffness matrix (kp or MOD_MTK)
           ! according to the incremental FEM iterations (MOD_MTK = 4MMS/dtim**2 + 2C/dtim + KGC) ; C = fk*KGC + fm*MMS 
           IF(i==nip)THEN
-            fm=0.05_iwp; fk=0.005_iwp
+            !fm=0.4936788455641104_iwp; fk=0.0013158595278225688_iwp
+            fm=0.0_iwp; fk=0.0_iwp
 
             mbod(bod)%KGC = zero
             mbod(bod)%MMS = zero
@@ -1425,7 +1426,8 @@ PROGRAM Implicit_MPM_eartquake
       ! Construct modified stiffness matrix (kp) and Rayleigh damping (cv)
       !-----------------------------------------------------------------------AS
       !fm=0.052359878_iwp;fk=0.000265258_iwp
-      fm=0.05_iwp; fk=0.005_iwp
+      !fm=0.4936788455641104_iwp; fk=0.0013158595278225688_iwp
+      fm=0.0_iwp; fk=0.0_iwp
       mbod(bod)%cv = fm*mbod(bod)%mv + fk*mbod(bod)%kv  ! cv is already in skyline form
       mbod(bod)%kp = 4.0_iwp*mbod(bod)%mv/dtim**2.0_iwp +  &
                      2.0_iwp/dtim*(mbod(bod)%cv) + mbod(bod)%kv
