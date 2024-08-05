@@ -1639,16 +1639,17 @@ PROGRAM Implicit_MPM_eartquake
     ! calculate nodal acceleration considering ground motion (kinup_Ground_d2x1)
     DO bod=2,size(mbod)
       lowbound=minval(mbod(bod)%g_coord(2,:)) 
-      IF(w<=accdata.and.w>=1)THEN
-        DO i=1,(mbod(bod)%ney+1)*(mbod(bod)%nex)
-          IF(mbod(bod)%g_coord(2,i)<lowbound+0.01_iwp)THEN
-            mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i)) = mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i)) - &
-                                                             mbod(bod)%kinup_d2x1(mbod(bod)%nf(1,i)) +        &    
+      DO i=1,(mbod(bod)%ney+1)*(mbod(bod)%nex)
+        IF(mbod(bod)%g_coord(2,i)<lowbound+0.01_iwp)THEN
+          mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i)) = mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i)) - &
+                                                           mbod(bod)%kinup_d2x1(mbod(bod)%nf(1,i))    
+          IF(w<=accdata.and.w>=1)THEN
+            mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i)) = mbod(bod)%kinup_Ground_d2x1(mbod(bod)%nf(1,i)) + &
                                                              mbod(bod)%ground_acc(w)
-            mbod(bod)%kinup_Ground_d2x1(0)=zero
-          END IF    
-        END DO
-      END IF
+          END IF
+          mbod(bod)%kinup_Ground_d2x1(0)=zero
+        END IF    
+      END DO
     END DO
 
     !-------------------------------------------------------------------------AS
