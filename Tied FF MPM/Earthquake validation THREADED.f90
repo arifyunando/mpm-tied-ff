@@ -26,7 +26,8 @@ PROGRAM Implicit_MPM_eartquake
   REAL(iwp)::h1,h2,s1,w1,w2,lowbound,maxbound,leftbound,rightbound,             &
               cellsize,Gravf,HSURF,waverage,fm,fk,upbound
   
-  LOGICAL:: shape=.false.,slope=.false.,equilibrium=.false.,newrapconv1, use_damping=.true.
+  LOGICAL:: shape=.false.,slope=.false.,equilibrium=.false.,newrapconv1 
+  LOGICAL:: inner_boundary, outer_boundary, use_damping
   
   !*** AS's Thesis
   ! These variables will become placeholders for tracking boundary elements
@@ -131,10 +132,17 @@ PROGRAM Implicit_MPM_eartquake
   OPEN(800,FILE='Output/mpm_disp.dat')
   OPEN(810,FILE='Output/mpm_vel.dat')
   OPEN(820,FILE='Output/mpm_acc.dat')
-  OPEN(830,FILE='Output/ff_disp.dat')
-  OPEN(840,FILE='Output/ff_vel.dat')
-  OPEN(850,FILE='Output/ff_acc.dat')
-  OPEN(860,FILE='Output/ff_nodal_acc.dat'
+  OPEN(830,FILE='Output/fem_disp.dat')
+  OPEN(840,FILE='Output/fem_vel.dat')
+  OPEN(850,FILE='Output/fem_acc.dat')
+  OPEN(860,FILE='Output/mpm_nodal_acc.dat')
+  OPEN(870,FILE='Output/fem_nodal_acc.dat')
+  OPEN(880,FILE='Output/mpm_nodal_vel.dat')
+  OPEN(890,FILE='Output/fem_nodal_vel.dat')
+  OPEN(900,FILE='Output/mpm_nf.dat')
+  OPEN(910,FILE='Output/fem_nf.dat')
+  OPEN(980,FILE='Output/mpm_coords.dat')
+  OPEN(990,FILE='Output/fem_coords.dat')
   
   OPEN(10,FILE='Input/Benchmark/Datafound.dat',status='old')
   OPEN(300,FILE='Input/Benchmark/Groundacc.dat',status='old')
@@ -161,7 +169,7 @@ PROGRAM Implicit_MPM_eartquake
   ! Copy the data from body 1 to freefields [AS]
   DO bod=2,size(mbod)
     mbod(bod)%slopeopt=mbod(1)%slopeopt
-    mbod(bod)%w1=1
+    mbod(bod)%w1=2*mbod(1)%w1/mbod(1)%nex
     mbod(bod)%h1=mbod(1)%h1
     mbod(bod)%s1=mbod(1)%s1
     mbod(bod)%nex=mbod(1)%nex
@@ -201,6 +209,10 @@ PROGRAM Implicit_MPM_eartquake
   
   printval = 5
   PRINT*, 'Printing results:', printval
+  
+  inner_boundary=.true. 
+  outer_boundary=.true.
+  use_damping=.false.
   
   Tini=0.0;Tfin=0.0;Tcont=0.0
   call cpu_time(Tini)
@@ -521,7 +533,7 @@ PROGRAM Implicit_MPM_eartquake
   END DO  
 
   ! Define the geometry of the background mesh
-  offset_y = 1; offset_x=4
+  offset_y = 1; offset_x=mbod(1)%dist_x
   nx1=dist_x + offset_x ! add 30 columns of elements to the right of the domain
   ny1=dist_y + offset_y ! add 1 row of elements at the bottom of the domain
   w1=cellsize*nx1 ! Size of domain in x-dir in units of distance
@@ -661,26 +673,30 @@ PROGRAM Implicit_MPM_eartquake
   END DO
   ! List all the boundary MPM cells and its corresponding freefield cells
   iel_boundary=0; k=1
-  DO i=1,size(left_boundary) 
-    iel_boundary(1,k) = i
-    iel_boundary(2,k) = left_boundary(i)
-    k = k+1
-  END DO
-  DO i=1,size(left_boundary) 
-    iel_boundary(1,k) = i
-    iel_boundary(2,k) = left_boundary(i) - 1
-    k = k+1
-  END DO
-  DO i=1,size(right_boundary) 
-    iel_boundary(1,k) = i
-    iel_boundary(2,k) = right_boundary(i)
-    k = k+1
-  END DO
-  DO i=1,size(right_boundary) 
-    iel_boundary(1,k) = i
-    iel_boundary(2,k) = right_boundary(i) + 1
-    k = k+1
-  END DO
+  IF(inner_boundary)THEN
+    DO i=1,size(left_boundary) 
+      iel_boundary(1,k) = i
+      iel_boundary(2,k) = left_boundary(i)
+      k = k+1
+    END DO
+    DO i=1,size(right_boundary) 
+      iel_boundary(1,k) = i
+      iel_boundary(2,k) = right_boundary(i)
+      k = k+1
+    END DO
+  END IF
+  IF(outer_boundary)THEN
+    DO i=1,size(left_boundary) 
+      iel_boundary(1,k) = i
+      iel_boundary(2,k) = left_boundary(i) - 1
+      k = k+1
+    END DO
+    DO i=1,size(right_boundary) 
+      iel_boundary(1,k) = i
+      iel_boundary(2,k) = right_boundary(i) + 1
+      k = k+1
+    END DO
+  END IF
   DO j=size(left_boundary),size(left_boundary)
     DO i=left_boundary(j), right_boundary(j)
       iel_boundary(1,k) = j
@@ -905,8 +921,8 @@ PROGRAM Implicit_MPM_eartquake
   END DO Constitutive
 
   ! Define gravity field
-  Gravf=10.00_iwp
-  k0=0.50_iwp
+  Gravf=10.00_iwp ! [m/s2]
+  k0=0.50_iwp     
   g_matrix=(/0.0_iwp,-10.0_iwp/)  !--Gravity acting in the vertical direction
   DO bod=1,size(mbod)
     mbod(bod)%g_matrix=(/0.0_iwp,-10.0_iwp/)
@@ -967,10 +983,7 @@ PROGRAM Implicit_MPM_eartquake
   ! Initial Configuration (print to paraview)
   !---------------------------------------------------------------------------AS
   
-  OPEN(860,FILE='Output/mpcoords.dat')
-  write(900, '(*(E15.5 ","))') mbod(1)%gm_coord
-  write(900, '(*(E15.5 ","))') mbod(2)%gm_coord
-  CLOSE(900)
+
 
   DO bod=1,size(mbod)
     IF(bod==1)THEN 
@@ -1599,7 +1612,6 @@ PROGRAM Implicit_MPM_eartquake
       mbod(bod)%d2x1(i)=mbod(bod)%m_mva(i)/mbod(bod)%diag(i)
     END DO
   END DO 
-  
 
   !============================================================================AS
   ! Iteration loops 
@@ -1966,6 +1978,15 @@ PROGRAM Implicit_MPM_eartquake
   ! Calculate new nodal acceleration (d2x1) and velocity (d1x1)
   !=============================================================================AS
   
+  write(860, '(*(E15.5E3 ","))') mbod(1)%d2x1
+  write(870, '(*(E15.5E3 ","))') mbod(2)%d2x1
+  write(880, '(*(E15.5E3 ","))') mbod(1)%d1x1
+  write(890, '(*(E15.5E3 ","))') mbod(2)%d1x1
+  write(900, '(*(I5 ","))') mbod(1)%nf
+  write(910, '(*(I5 ","))') mbod(2)%nf
+  write(980, '(*(F10.5 ","))') g_coord
+  write(990, '(*(F10.5 ","))') mbod(2)%g_coord
+  
   ! x1_acum is here just for post-simulation purpose. Not for actual calculation
   ! With the FEM, nodal kinematics is kept on the nodes.
   DO bod=2,size(mbod)
@@ -2073,13 +2094,12 @@ PROGRAM Implicit_MPM_eartquake
   ! Simulation Output and Visualization
   !=============================================================================AS
  
-  write(800, '(*(E15.5 ","))') mbod(1)%ins_acum
-  write(810, '(*(E15.5 ","))') mbod(1)%m_velocity
-  write(820, '(*(E15.5 ","))') mbod(1)%m_acc
-  write(830, '(*(E15.5 ","))') mbod(2)%ins_acum
-  write(840, '(*(E15.5 ","))') mbod(2)%m_velocity
-  write(850, '(*(E15.5 ","))') mbod(2)%m_acc
-  write(860, '(*(E15.5 ","))') mbod(2)%d2x1
+  write(800, '(*(E15.5E3 ","))') mbod(1)%ins_acum
+  write(810, '(*(E15.5E3 ","))') mbod(1)%m_velocity
+  write(820, '(*(E15.5E3 ","))') mbod(1)%m_acc
+  write(830, '(*(E15.5E3 ","))') mbod(2)%ins_acum
+  write(840, '(*(E15.5E3 ","))') mbod(2)%m_velocity
+  write(850, '(*(E15.5E3 ","))') mbod(2)%m_acc
   
   ! -- Loop to save data from both bodies and print it in point_vis
   IF(step/printval*printval==step)THEN
@@ -2264,26 +2284,30 @@ PROGRAM Implicit_MPM_eartquake
   END DO
   ! List all the boundary MPM cells and its corresponding freefield cells
   iel_boundary=0; k=1
-  DO i=1,size(left_boundary) 
-    iel_boundary(1,k) = i
-    iel_boundary(2,k) = left_boundary(i)
-    k = k+1
-  END DO
-  DO i=1,size(left_boundary) 
-    iel_boundary(1,k) = i
-    iel_boundary(2,k) = right_boundary(i)
-    k = k+1
-  END DO
-  DO i=1,size(right_boundary) 
-    iel_boundary(1,k) = i
-    iel_boundary(2,k) = right_boundary(i)
-    k = k+1
-  END DO
-  DO i=1,size(right_boundary) 
-    iel_boundary(1,k) = i
-    iel_boundary(2,k) = right_boundary(i) + 1
-    k = k+1
-  END DO
+  IF(inner_boundary)THEN
+    DO i=1,size(left_boundary) 
+      iel_boundary(1,k) = i
+      iel_boundary(2,k) = left_boundary(i)
+      k = k+1
+    END DO
+    DO i=1,size(right_boundary) 
+      iel_boundary(1,k) = i
+      iel_boundary(2,k) = right_boundary(i)
+      k = k+1
+    END DO
+  END IF
+  IF(outer_boundary)THEN
+    DO i=1,size(left_boundary) 
+      iel_boundary(1,k) = i
+      iel_boundary(2,k) = left_boundary(i) - 1
+      k = k+1
+    END DO
+    DO i=1,size(right_boundary) 
+      iel_boundary(1,k) = i
+      iel_boundary(2,k) = right_boundary(i) + 1
+      k = k+1
+    END DO
+  END IF
   DO j=size(left_boundary),size(left_boundary)
     DO i=left_boundary(j), right_boundary(j)
       iel_boundary(1,k) = j
